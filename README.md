@@ -4,9 +4,10 @@
 Use nginx as a common TCP server framework
 
 <h3>Description</h3>
-The motivation for writing these is to use nginx as a common TCP server framework, So it called ngx_tcp.The ngx_tcp.jpg illustrates this framework.Most of the code is modificationed from nginx mail modules.I developed an application protocol that is named command protocol over the TCP.</br>
-Command Protocol Format
-    0                   1                   2                   3   
+<p>The motivation for writing these is to use nginx as a common TCP server framework, So it called ngx_tcp.The ngx_tcp.jpg illustrates this framework.Most of the code is modificationed from nginx mail modules.I developed an application protocol that is named command protocol over the TCP.</p>
+
+<br>Command Protocol Format</br>
+<br>    0                   1                   2                   3</br>
     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    |                            size                               |
