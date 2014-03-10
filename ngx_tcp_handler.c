@@ -142,7 +142,7 @@ ngx_tcp_init_connection(ngx_connection_t *c)
     ctx->session = s;
 
     c->log->connection = c->number;
-    c->log->handler = ngx_tcp_log_error;
+    c->log->handler = ngx_tcp_log_error_msg;
     c->log->data = ctx;
     c->log->action = "sending client greeting line";
 
@@ -467,7 +467,7 @@ ngx_tcp_close_connection(ngx_connection_t *c)
 
 
 u_char *
-ngx_tcp_log_error(ngx_log_t *log, u_char *buf, size_t len)
+ngx_tcp_log_error_msg(ngx_log_t *log, u_char *buf, size_t len)
 {
     u_char              *p;
     ngx_tcp_log_ctx_t   *ctx;

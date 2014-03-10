@@ -40,9 +40,9 @@ pp_pkg_handler(ngx_tcp_ctx_t *ctx, const u_char *pkg, int pkg_len)
     //pp_str.data = pkg + CMD_SESSION_PKG_HEAD_LEN;
     //pp_str.len = pkghead->size - CMD_SESSION_PKG_HEAD_LEN;
 
-    //ngx_log_error(NGX_LOG_INFO, c->log, 0, 
-    //    "ngx_tcp_cmd_pingpong_handler|pkg_size=%d|str=%v\n",
-    //        pkghead->size, &pp_str);
+    ctx->log_error(NGX_TCP_LOG_INFO, ctx->log, 0, 
+        "pp_pkg_handler|pkg_size=%d|str=%s\n",
+            pkghead->size, pkg + CMD_SESSION_PKG_HEAD_LEN);
 
     pkghead->cmd = PP_CMD_SC;
     ngx_tcp_cmd_pkghead_hton(pkghead);

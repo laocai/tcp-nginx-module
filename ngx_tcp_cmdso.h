@@ -6,17 +6,43 @@
 #include <stdint.h>
 #include <netinet/in.h>
 
+/* */
+typedef intptr_t        ngx_tcp_int_t;
+typedef uintptr_t       ngx_tcp_uint_t;
+typedef intptr_t        ngx_tcp_flag_t;
+typedef int             ngx_tcp_err_t;
+
+#define NGX_TCP_LOG_STDERR            0
+#define NGX_TCP_LOG_EMERG             1
+#define NGX_TCP_LOG_ALERT             2
+#define NGX_TCP_LOG_CRIT              3
+#define NGX_TCP_LOG_ERR               4
+#define NGX_TCP_LOG_WARN              5
+#define NGX_TCP_LOG_NOTICE            6
+#define NGX_TCP_LOG_INFO              7
+#define NGX_TCP_LOG_DEBUG             8
+
+#define ngx_tcp_log_error(level, log, args...)   \
+    if ((log)->log_level >= level) ngx_log_error_core(level, log, args)
+
 typedef struct ngx_tcp_ctx_s ngx_tcp_ctx_t;
 
 typedef long (*ngx_tcp_send_data_pt)(ngx_tcp_ctx_t *ctx, 
                                      const u_char *data, 
                                      int len);
 
+typedef void (*ngx_tcp_log_error_pt)(ngx_tcp_uint_t level, void *log, 
+                                     ngx_tcp_err_t err, 
+                                     const char *fmt, ...);
+
 struct ngx_tcp_ctx_s {
     /* cmdso_sessioin array. the slot is init in cmdso_load func */
     void                  **cmdso_sessioin;
     void                   *ngx_tcp_session;
     ngx_tcp_send_data_pt    send_data;
+
+    void                    *log;
+    ngx_tcp_log_error_pt    log_error;
 };
 
 typedef long (*cmd_pkg_handler_pt)(ngx_tcp_ctx_t *ctx, 

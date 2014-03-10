@@ -26,6 +26,8 @@ ngx_tcp_cmd_create_session(ngx_connection_t *c)
     if (s->tcp_ctx.cmdso_sessioin == NULL) {
         goto failed;
     }
+    s->tcp_ctx.log = c->log;
+    s->tcp_ctx.log_error = (ngx_tcp_log_error_pt)ngx_log_error_core;
     s->tcp_ctx.send_data = ngx_tcp_send_data;
     s->tcp_ctx.ngx_tcp_session = s;
     s->output_ctx = ngx_pcalloc(c->pool, sizeof(ngx_output_chain_ctx_t));

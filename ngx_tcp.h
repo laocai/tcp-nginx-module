@@ -300,8 +300,7 @@ void ngx_tcp_send(ngx_event_t *wev);
 long ngx_tcp_send_data(ngx_tcp_ctx_t *ctx, const u_char *data, int len);
 void ngx_tcp_close_connection(ngx_connection_t *c);
 void ngx_tcp_session_internal_server_error(ngx_tcp_session_t *s);
-u_char *ngx_tcp_log_error(ngx_log_t *log, u_char *buf, size_t len);
-
+u_char *ngx_tcp_log_error_msg(ngx_log_t *log, u_char *buf, size_t len);
 
 /* STUB */
 void ngx_tcp_proxy_init(ngx_tcp_session_t *s, ngx_addr_t *peer);

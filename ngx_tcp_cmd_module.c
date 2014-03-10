@@ -134,14 +134,10 @@ ngx_tcp_cmd_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 static ngx_int_t 
 ngx_tcp_cmd_process_init(ngx_cycle_t *cycle)
 {
-    ngx_tcp_core_main_conf_t   *cmcf;
-    ngx_tcp_conf_ctx_t         *ctx;
     ngx_str_t                   cmdso_path = ngx_string("cmdso");
     ngx_uint_t                  i;
     ngx_tcp_cmdso_t            *cmdsos;
 
-    ctx = (ngx_tcp_conf_ctx_t *)ngx_get_conf(cycle->conf_ctx, ngx_tcp_module);
-    cmcf = ngx_tcp_get_module_main_conf(ctx, ngx_tcp_core_module);
     cmdso_mgr = ngx_pcalloc(cycle->pool, sizeof(ngx_tcp_cmdso_mgr_t));
     if (cmdso_mgr == NULL) {
         goto failed;
