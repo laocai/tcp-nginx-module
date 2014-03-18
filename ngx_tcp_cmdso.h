@@ -35,19 +35,24 @@ typedef void (*ngx_tcp_log_error_pt)(ngx_tcp_uint_t level, void *log,
 typedef void *(*ngx_tcp_alloc_pt)(void *pool, size_t size);
 typedef ngx_tcp_int_t (*ngx_tcp_pfree_pt)(void *pool, void *p);
 
+typedef ngx_tcp_int_t (*ngx_tcp_conf_get_str_pt)(const char *section,
+    const char *k, char **v);
+
 struct ngx_tcp_ctx_s {
     /* cmdso_sessioin array. the slot is init in cmdso_load func */
-    void                  **cmdso_sessioin;
-    void                   *ngx_tcp_session;
-    ngx_tcp_send_data_pt    send_data;
+    void                   **cmdso_sessioin;
+    void                    *ngx_tcp_session;
+    ngx_tcp_send_data_pt     send_data;
 
-    void                   *log;
-    ngx_tcp_log_error_pt    log_error;
+    ngx_tcp_conf_get_str_pt  conf_get_str;
 
-    void                   *pool;
-    ngx_tcp_alloc_pt        palloc;
-    ngx_tcp_alloc_pt        pcalloc;
-    ngx_tcp_pfree_pt        pfree;
+    void                    *log;
+    ngx_tcp_log_error_pt     log_error;
+
+    void                    *pool;
+    ngx_tcp_alloc_pt         palloc;
+    ngx_tcp_alloc_pt         pcalloc;
+    ngx_tcp_pfree_pt         pfree;
 };
 
 typedef long (*cmd_pkg_handler_pt)(ngx_tcp_ctx_t *ctx, 

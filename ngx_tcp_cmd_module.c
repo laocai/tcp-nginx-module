@@ -3,15 +3,19 @@
 #include <ngx_core.h>
 #include <ngx_event.h>
 #include <ngx_tcp.h>
+#include <ngx_regex.h>
 #include <ngx_tcp_cmd_module.h>
 #include <dlfcn.h>
 
 ngx_tcp_cmdso_mgr_t *cmdso_mgr;
+ngx_map_t           *cmdso_conf;
 
 static void *ngx_tcp_cmd_create_srv_conf(ngx_conf_t *cf);
 static char *ngx_tcp_cmd_merge_srv_conf(ngx_conf_t *cf, void *parent,
     void *child);
 
+static ngx_int_t ngx_tcp_cmd_parse_ini_conf(ngx_cycle_t *cycle);
+static ngx_int_t ngx_tcp_cmd_module_init(ngx_cycle_t *cycle);
 static ngx_int_t ngx_tcp_cmd_process_init(ngx_cycle_t *cycle);
 static void ngx_tcp_cmd_process_exit(ngx_cycle_t *cycle);
 static char *
@@ -85,7 +89,7 @@ ngx_module_t  ngx_tcp_cmd_module = {
     ngx_tcp_cmd_commands,         /* module directives */
     NGX_TCP_MODULE,               /* module type */
     NULL,                         /* init master */
-    NULL,                         /* init module */
+    ngx_tcp_cmd_module_init,      /* init module */
     ngx_tcp_cmd_process_init,     /* init process */
     NULL,                         /* init thread */
     NULL,                         /* exit thread */
@@ -132,11 +136,181 @@ ngx_tcp_cmd_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 
 
 static ngx_int_t 
+ngx_tcp_cmd_module_init(ngx_cycle_t *cycle)
+{
+    if (ngx_tcp_cmd_parse_ini_conf(cycle) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    ngx_map_test();
+
+    return NGX_OK;
+}
+
+
+#define CMDSO_PATH_STR ngx_string("cmdso")
+#define CMDSO_INI_FILE_STR ngx_string("cmdso.ini")
+#define CMDSO_INI_FILE_LINE_MAXLEN 1024
+#define CMDSO_INI_SECTION_PATTERN "^[\\s]*\\[(.*)\\][\\s]*$"
+#define CMDSO_INI_LINE_PATTERN "^[\\s]*([\\S]*)[\\s]*=[\\s]*([\\S]*)[\\s]*$"
+static ngx_int_t 
+ngx_tcp_cmd_parse_ini_conf(ngx_cycle_t *cycle)
+{
+    ngx_str_t            cmdso_path = CMDSO_PATH_STR;
+    ngx_str_t            cmdso_file = CMDSO_INI_FILE_STR;
+    char                *path_file;
+    FILE                *p_file;
+    int                  lines;
+    char                 line_buf[CMDSO_INI_FILE_LINE_MAXLEN];
+#define PCRE_OVECTOR_SIZE 16
+    int                  ovector[PCRE_OVECTOR_SIZE];
+    ngx_regex_compile_t  re_section;
+    ngx_regex_compile_t  re_line;
+    int                  rc;
+    ngx_str_t            ini_section = ngx_null_string;
+    ngx_map_t           *section_map;
+
+    cmdso_conf = ngx_map_create(NGX_MAP_STR_T, NGX_MAP_PTR_T, 
+        cycle->pool, (ngx_palloc_pt)ngx_palloc, (ngx_pfree_pt)ngx_pfree);
+    if (cmdso_conf == NULL) {
+        ngx_log_error(NGX_LOG_ERR, cycle->log, 0, 
+            "ngx_tcp_cmd_parse_ini_conf|cmdso_conf == NULL\n");
+        return NGX_ERROR;
+    }
+
+    /* the cmdso_path->data will end with '\0' */
+    ngx_conf_full_name(cycle, &cmdso_path, 0);
+    path_file = ngx_tcp_cmd_concat_filename((const char *)cmdso_path.data, 
+        (const char *)cmdso_file.data);
+    p_file = fopen(path_file, "r");
+    free(path_file);
+    if (p_file == NULL) {
+        ngx_log_error(NGX_LOG_WARN, cycle->log, 0, 
+            "ngx_tcp_cmd_parse_ini_conf|%V has'n %V\n", &cmdso_path, &cmdso_file);
+        ngx_map_destroy(cmdso_conf);
+        cmdso_conf = NULL;
+        return NGX_OK;
+    }
+
+    ngx_memset(&re_section, 0, sizeof(ngx_regex_compile_t));
+    re_section.pool = cycle->pool;
+    re_section.pattern.data = (u_char *)CMDSO_INI_SECTION_PATTERN;
+    re_section.pattern.len = sizeof(CMDSO_INI_SECTION_PATTERN) - 1;
+    if (ngx_regex_compile(&re_section) != NGX_OK) {
+        ngx_log_error(NGX_LOG_ERR, cycle->log, 0, 
+            "ngx_tcp_cmd_parse_ini_conf|pattern = %s|pcre_err is %V.\n", 
+            CMDSO_INI_SECTION_PATTERN, &re_section.err);
+        goto failed;
+    }
+    ngx_memset(&re_line, 0, sizeof(ngx_regex_compile_t));
+    re_line.pool = cycle->pool;
+    re_line.pattern.data = (u_char *)CMDSO_INI_LINE_PATTERN;
+    re_line.pattern.len = sizeof(CMDSO_INI_LINE_PATTERN) - 1;
+    if (ngx_regex_compile(&re_line) != NGX_OK) {
+        ngx_log_error(NGX_LOG_ERR, cycle->log, 0, 
+            "ngx_tcp_cmd_parse_ini_conf|pattern = %s|pcre_err is %V.\n", 
+            CMDSO_INI_LINE_PATTERN, &re_line.err);
+        goto failed;
+    }
+
+    lines = 0;
+    while (fgets(line_buf, CMDSO_INI_FILE_LINE_MAXLEN, p_file) != NULL
+        && !feof(p_file)) {
+        int str_len;
+        int i = 0;
+        ++lines;
+        while(line_buf[i] 
+            && (line_buf[i] == ' ' || line_buf[i] == '\t' 
+                || line_buf[i] == '\n')) {
+            ++i;
+        }
+        if (!line_buf[i] || line_buf[i] == '#')
+            continue;
+        rc = pcre_exec(re_section.regex->code, NULL, line_buf, ngx_strlen(line_buf), 
+                       0, 0, ovector, PCRE_OVECTOR_SIZE);
+        if (rc < 0) {
+            goto __pcre_exec_after_ini_section__;
+        }
+        if (ini_section.data != NULL ) {
+            free(ini_section.data);
+            ini_section.data = NULL;
+        }
+        str_len = ovector[3] - ovector[2];
+        ini_section.data = (u_char *)strndup(&line_buf[0] + ovector[2], str_len);
+        ini_section.len = str_len;
+        section_map = ngx_map_create(NGX_MAP_NGXSTR_T, NGX_MAP_NGXSTR_T, 
+            cycle->pool, (ngx_palloc_pt)ngx_palloc, (ngx_pfree_pt)ngx_pfree); 
+        if (cmdso_conf == NULL) {
+            ngx_log_error(NGX_LOG_ERR, cycle->log, 0, 
+                "ngx_tcp_cmd_parse_ini_conf|cmdso_conf == NULL\n");
+            goto failed;
+        }
+        if (ngx_map_set_str_ptr(cmdso_conf, (const char *)ini_section.data, section_map) 
+            != NGX_OK) {
+            ngx_log_error(NGX_LOG_ERR, cycle->log, 0, 
+                "ngx_tcp_cmd_parse_ini_conf|ngx_map_set_str_ptr %s\n", 
+                ini_section.data);
+            goto failed;
+        }
+        section_map = NULL;
+        continue;
+
+__pcre_exec_after_ini_section__:
+        rc = pcre_exec(re_line.regex->code, NULL, line_buf, ngx_strlen(line_buf), 
+                       0, 0, ovector, PCRE_OVECTOR_SIZE);
+        if (rc < 0) {
+            ngx_log_error(NGX_LOG_ERR, cycle->log, 0, 
+                "ngx_tcp_cmd_parse_ini_conf|pcre_exec %s, line number %d\n",
+                line_buf, lines);
+            goto failed;
+        }
+        if (ini_section.data == NULL ) {
+            ngx_log_error(NGX_LOG_ERR, cycle->log, 0, 
+                "ngx_tcp_cmd_parse_ini_conf|no section line %s, line number %d\n",
+                line_buf, lines);
+            goto failed;
+        }
+        if (ngx_map_find_str_ptr(cmdso_conf, (const char *)ini_section.data, 
+            (void **)&section_map) != NGX_OK) {
+            ngx_log_error(NGX_LOG_ERR, cycle->log, 0, 
+                "ngx_tcp_cmd_parse_ini_conf|find section %s, line number %d\n",
+                ini_section.data, lines);
+            goto failed;
+        }
+        {
+            ngx_str_t k,v;
+
+            k.data = (u_char *)(line_buf + ovector[2]);
+            k.len = ovector[3] - ovector[2];
+            v.data = (u_char *)(line_buf + ovector[4]);
+            v.len = ovector[5] - ovector[4];
+
+
+            ngx_map_set_ngxstr_ngxstr(section_map, &k, &v);
+        }
+    } // end while
+    fclose(p_file);
+
+    return NGX_OK;
+
+failed:
+    if (ini_section.data != NULL ) {
+        free(ini_section.data);
+        ini_section.data = NULL;
+    }
+    if (p_file != NULL) {
+        fclose(p_file);
+        p_file = NULL;
+    }
+    return NGX_ERROR;
+}
+
+static ngx_int_t 
 ngx_tcp_cmd_process_init(ngx_cycle_t *cycle)
 {
-    ngx_str_t                   cmdso_path = ngx_string("cmdso");
-    ngx_uint_t                  i;
-    ngx_tcp_cmdso_t            *cmdsos;
+    ngx_str_t            cmdso_path = CMDSO_PATH_STR;
+    ngx_uint_t           i;
+    ngx_tcp_cmdso_t     *cmdsos;
 
     cmdso_mgr = ngx_pcalloc(cycle->pool, sizeof(ngx_tcp_cmdso_mgr_t));
     if (cmdso_mgr == NULL) {
@@ -216,6 +390,16 @@ ngx_tcp_cmd_load_cmdso(ngx_cycle_t *cycle, const char *cmdso_path)
                  }
             }
             if (ent->d_type & DT_REG) {
+                 size_t filename_len = ngx_strlen(ent->d_name);
+                 if (filename_len < 3 || ent->d_name[filename_len - 1] != 'o'
+                     || ent->d_name[filename_len - 2] != 's'
+                     || ent->d_name[filename_len - 3] != '.') {
+                     free(ent);
+                     ngx_log_error(NGX_LOG_ERR, cycle->log, 0, 
+                         "ngx_tcp_cmd_load_cmdso|don't load %s,"
+                         " file name must end with \".so\"\n", ent->d_name);
+                     continue;
+                 }
                  rc = ngx_tcp_cmd_load_cmdso_process(cycle, 
                          cmdso_path, 
                          ent->d_name, 
@@ -500,3 +684,27 @@ ngx_tcp_cmd_tran_handler(ngx_tcp_ctx_t *ctx, const u_char *pkg, int pkg_len)
 
     return NGX_OK;
 }
+
+ngx_int_t 
+ngx_tcp_cmd_conf_get_str(const char *section, const char *k, char **v)
+{
+    ngx_map_t *section_map;
+    ngx_str_t  fk, *fv;
+
+    if (ngx_map_find_str_ptr(cmdso_conf, section, (void **)&section_map)
+        != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    fk.data = (u_char *)k;
+    fk.len = ngx_strlen(k);
+    if (ngx_map_find_ngxstr_ngxstr(section_map, &fk, &fv)
+        != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    *v = (char *)fv->data;
+
+    return NGX_OK;
+}
+
