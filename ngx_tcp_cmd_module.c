@@ -691,6 +691,10 @@ ngx_tcp_cmd_conf_get_str(const char *section, const char *k, char **v)
     ngx_map_t *section_map;
     ngx_str_t  fk, *fv;
 
+    if (cmdso_conf == NULL) {
+        return NGX_ERROR;
+    }
+
     if (ngx_map_find_str_ptr(cmdso_conf, section, (void **)&section_map)
         != NGX_OK) {
         return NGX_ERROR;
