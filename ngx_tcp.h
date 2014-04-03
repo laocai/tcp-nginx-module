@@ -188,8 +188,49 @@ typedef struct {
     ngx_buf_t               *buffer;
 } ngx_tcp_proxy_ctx_t;
 
+typedef struct ngx_tcp_session_s ngx_tcp_session_t;
+typedef struct ngx_tcp_output_chain_ctx_s  ngx_tcp_output_chain_ctx_t;
 
-typedef struct {
+typedef ngx_int_t (*ngx_tcp_output_chain_filter_pt)(ngx_tcp_session_t *s);
+
+struct ngx_tcp_output_chain_ctx_s {
+    ngx_buf_t                   *buf;
+    ngx_chain_t                 *in;
+    ngx_chain_t                 *free;
+    ngx_chain_t                 *busy;
+
+    unsigned                     sendfile:1;
+    unsigned                     directio:1;
+#if (NGX_HAVE_ALIGNED_DIRECTIO)
+    unsigned                     unaligned:1;
+#endif
+    unsigned                     need_in_memory:1;
+    unsigned                     need_in_temp:1;
+#if (NGX_HAVE_FILE_AIO)
+    unsigned                     aio:1;
+
+    ngx_output_chain_aio_pt      aio_handler;
+#endif
+
+    off_t                        alignment;
+
+    ngx_pool_t                  *pool;
+    ngx_int_t                    allocated;
+    ngx_bufs_t                   bufs;
+    ngx_buf_tag_t                tag;
+
+    ngx_tcp_output_chain_filter_pt   output_filter;
+    void                        *filter_ctx;
+};
+
+typedef struct  {
+#define OUTPUT_CHAIN_AGAIN_SIZE 1024
+    ngx_chain_t   *out_chain_arr[OUTPUT_CHAIN_AGAIN_SIZE];
+    unsigned       ix_r;
+    unsigned       ix_w;
+} ngx_tcp_output_again_t;
+
+struct ngx_tcp_session_s {
     uint32_t                 signature;         /* "TCP" */
 
     ngx_tcp_ctx_t            tcp_ctx;
@@ -198,7 +239,9 @@ typedef struct {
 
     ngx_buf_t               *buffer;           /* recv buf */
     ngx_chain_t             *output_buffer_chain;
-    ngx_output_chain_ctx_t  *output_ctx;       /* send buf chain context */
+    ngx_tcp_output_chain_ctx_t  *output_ctx;       /* send buf chain context */
+    ngx_tcp_output_again_t       output_again;
+                  
 
     void                   **ctx;
     void                   **main_conf;
@@ -208,7 +251,7 @@ typedef struct {
     unsigned                 blocked:1;
 
     ngx_str_t               *addr_text;
-} ngx_tcp_session_t;
+};
 
 
 typedef struct {
@@ -228,9 +271,9 @@ typedef void (*ngx_tcp_init_protocol_pt)(ngx_event_t *rev);
 typedef ngx_int_t (*ngx_tcp_parse_pkg_pt)(ngx_tcp_session_t *s);
 
 ngx_chain_t *
-ngx_tcp_chain_get_free_buf(ngx_output_chain_ctx_t *ctx, size_t total_size);
+ngx_tcp_chain_get_free_buf(ngx_tcp_output_chain_ctx_t *ctx, size_t total_size);
 ngx_int_t ngx_tcp_open_listening_socket(ngx_listening_t  *ls);
-ngx_int_t ngx_tcp_chain_writer(void *data, ngx_chain_t *in);
+ngx_int_t ngx_tcp_chain_writer(ngx_tcp_session_t *s);
 
 struct ngx_tcp_protocol_s {
     ngx_str_t                   name;

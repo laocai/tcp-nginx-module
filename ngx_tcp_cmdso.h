@@ -69,8 +69,19 @@ typedef long
 #define CMDSO_SESS_INIT     "cmdso_sess_init"
 #define CMDSO_SESS_FINIT    "cmdso_sess_finit"
 
+typedef void (*ngx_cyl_log_error_pt)(ngx_tcp_uint_t level, void *log, 
+                                     ngx_tcp_err_t err, 
+                                     const char *fmt, ...);
+struct ngx_tcp_cycle_ctx_s {
+	   ngx_tcp_conf_get_str_pt  conf_get_str;
+	   void                     *log;
+	   ngx_cyl_log_error_pt     log_error;
+};
+typedef struct ngx_tcp_cycle_ctx_s ngx_tcp_cycle_ctx_t;
+
 typedef long 
-(*cmdso_load_pt)(void *cycle_param, cmd_pkg_handler_add_pt add_h, int slot);
+(*cmdso_load_pt)(void *cycle_param, cmd_pkg_handler_add_pt add_h, int slot,
+	ngx_tcp_cycle_ctx_t *cycle_ctx);
 typedef long (*cmdso_unload_pt)(void *cycle_param);
 typedef long (*cmdso_sess_init_pt)(ngx_tcp_ctx_t *ctx);
 typedef long (*cmdso_sess_finit_pt)(ngx_tcp_ctx_t *ctx);

@@ -325,7 +325,7 @@ ngx_tcp_send(ngx_event_t *wev)
     s = c->data;
 
     if (wev->timedout) {
-        ngx_log_error(NGX_LOG_INFO, c->log, NGX_ETIMEDOUT, "client timed out");
+        ngx_log_error(NGX_LOG_WARN, c->log, NGX_ETIMEDOUT, "ngx_tcp_send|client timed out");
         c->timedout = 1;
         ngx_tcp_close_connection(c);
         return;
@@ -335,8 +335,9 @@ ngx_tcp_send(ngx_event_t *wev)
         return;
     }
 
-    rc = s->output_ctx->output_filter(s->output_ctx->filter_ctx, 
-                                      s->output_buffer_chain);
+   // rc = s->output_ctx->output_filter(s->output_ctx->filter_ctx, 
+                                      //s->output_buffer_chain);
+    rc = s->output_ctx->output_filter(s);
     ngx_chain_update_chains(s->output_ctx->pool, 
                             &s->output_ctx->free, &s->output_ctx->busy, 
                             &s->output_buffer_chain, s->output_ctx->tag);

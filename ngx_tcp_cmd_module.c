@@ -6,6 +6,7 @@
 #include <ngx_regex.h>
 #include <ngx_tcp_cmd_module.h>
 #include <dlfcn.h>
+#include <ngx_map.h>
 
 ngx_tcp_cmdso_mgr_t *cmdso_mgr;
 ngx_map_t           *cmdso_conf;
@@ -141,7 +142,7 @@ ngx_tcp_cmd_module_init(ngx_cycle_t *cycle)
     if (ngx_tcp_cmd_parse_ini_conf(cycle) != NGX_OK) {
         return NGX_ERROR;
     }
-
+	
     ngx_map_test();
 
     return NGX_OK;
@@ -311,11 +312,22 @@ ngx_tcp_cmd_process_init(ngx_cycle_t *cycle)
     ngx_str_t            cmdso_path = CMDSO_PATH_STR;
     ngx_uint_t           i;
     ngx_tcp_cmdso_t     *cmdsos;
+	ngx_tcp_cycle_ctx_t  *cycle_ctx;
 
     cmdso_mgr = ngx_pcalloc(cycle->pool, sizeof(ngx_tcp_cmdso_mgr_t));
     if (cmdso_mgr == NULL) {
         goto failed;
     }
+
+	cycle_ctx = ngx_pcalloc(cycle->pool, sizeof(ngx_tcp_cycle_ctx_t));
+	if (NULL == cycle_ctx) {
+		goto failed;
+	}
+	
+	cycle_ctx->conf_get_str = (ngx_tcp_conf_get_str_pt)ngx_tcp_cmd_conf_get_str;
+	cycle_ctx->log = cycle->log;
+	cycle_ctx->log_error=(ngx_cyl_log_error_pt)ngx_log_error_core;
+
     ngx_rbtree_init(&cmdso_mgr->pkg_handler_mgr.rbtree, 
                     &cmdso_mgr->pkg_handler_mgr.sentinel, 
                     ngx_rbtree_insert_value);
@@ -346,7 +358,7 @@ ngx_tcp_cmd_process_init(ngx_cycle_t *cycle)
     }
     cmdsos = cmdso_mgr->cmdsos.elts;
     for (i=0; i < cmdso_mgr->cmdsos.nelts; ++i) {
-        if (cmdsos[i].cmdso_load(cycle, ngx_tcp_cmd_pkg_handler_add, i)
+        if (cmdsos[i].cmdso_load(cycle, ngx_tcp_cmd_pkg_handler_add, i, cycle_ctx)
             != NGX_OK) {
             goto failed;
         }
@@ -450,7 +462,7 @@ ngx_tcp_cmd_load_cmdso_i(ngx_cycle_t *cycle, const char *sofile)
     handle = dlopen(sofile, RTLD_NOW);
     if (! handle) {
         ngx_log_error(NGX_LOG_ERR, cycle->log, 0, 
-            "ngx_tcp_cmd_load_cmdso_i|dlopen %s|errno=%d\n", sofile, errno);
+            "ngx_tcp_cmd_load_cmdso_i|dlopen %s|errno=%d|errmsg=%s\n", sofile, errno, dlerror());
         goto failed;
     }
 
@@ -458,7 +470,7 @@ ngx_tcp_cmd_load_cmdso_i(ngx_cycle_t *cycle, const char *sofile)
     *(void **) (&soload) = dlsym(handle, CMDSO_LOAD);
     if (soload == NULL) {
         ngx_log_error(NGX_LOG_ERR, cycle->log, 0, 
-            "ngx_tcp_cmd_load_cmdso_i|dlsym %s:%s|errno=%d\n", 
+            "ngx_tcp_cmd_load_cmdso_i|dlsym %s:%s|errno=%d|errmsg=%s\n", 
                 sofile, CMDSO_LOAD, errno);
         goto failed;
     }

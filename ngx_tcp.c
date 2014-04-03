@@ -567,7 +567,7 @@ ngx_tcp_create_session(ngx_connection_t *c)
 }
 
 ngx_chain_t *
-ngx_tcp_chain_get_free_buf(ngx_output_chain_ctx_t *ctx, size_t total_size)
+ngx_tcp_chain_get_free_buf(ngx_tcp_output_chain_ctx_t *ctx, size_t total_size)
 {
     ngx_chain_t *cl, **ll;
     size_t size = 0;
@@ -785,58 +785,100 @@ ngx_tcp_open_listening_socket(ngx_listening_t  *ls)
 }
 
 ngx_int_t
-ngx_tcp_chain_writer(void *data, ngx_chain_t *in)
+//ngx_tcp_chain_writer(void *data, ngx_chain_t *in)
+ngx_tcp_chain_writer(ngx_tcp_session_t *s)
 {
-    ngx_chain_writer_ctx_t *ctx = data;
+    //s->output_ctx->filter_ctx, 
+    //s->output_buffer_chain
+    ngx_chain_writer_ctx_t *ctx;
+    ngx_chain_t            *in;
+    ngx_tcp_output_again_t *again_ptr;
 
-    off_t              size;
-    ngx_chain_t       *cl;
-    ngx_connection_t  *c;
-
+    off_t                  size;
+    ngx_chain_t            *cl;
+    ngx_connection_t       *c;
+  
+    ctx = s->output_ctx->filter_ctx;
+    in = s->output_buffer_chain;
+    again_ptr = &s->output_again;
     c = ctx->connection;
-
-    if (ctx->out == NULL) {
-        *(ctx->last) = in;
-    } else {
-        ctx->out->next = in;
-    }
-
-    ngx_log_debug1(NGX_LOG_DEBUG_CORE, c->log, 0,
-                   "tcp chain writer in: %p", ctx->out);
-
-    size = 0;
-    for (cl = ctx->out; cl; cl = cl->next) {
-
-#if 1
-        if (ngx_buf_size(cl->buf) == 0 && !ngx_buf_special(cl->buf)) {
-            ngx_debug_point();
-        }
-
-#endif
-
-        size += ngx_buf_size(cl->buf);
-    }
-
-    if (size == 0 && !c->buffered) {
-        return NGX_OK;
-    }
-
-    ctx->out = c->send_chain(c, ctx->out, ctx->limit);
-
-    ngx_log_debug1(NGX_LOG_DEBUG_CORE, c->log, 0,
-                   "chain writer out: %p", ctx->out);
-
-    if (ctx->out == NGX_CHAIN_ERROR) {
+    
+    again_ptr->out_chain_arr[again_ptr->ix_w++] = in;
+    again_ptr->ix_w &= (OUTPUT_CHAIN_AGAIN_SIZE - 1);
+    
+    //if output_again_arr is full, return error;
+    if (again_ptr->ix_w == again_ptr->ix_r) {
+        ngx_log_error(NGX_LOG_ERR, c->log, 0, 
+            "ngx_tcp_chain_writer|output_again_arr is full|ix_w=%d|ix_r=%d", 
+            again_ptr->ix_w, again_ptr->ix_r);
         return NGX_ERROR;
     }
-
-    if (ctx->out == NULL) {
-        ctx->last = &ctx->out;
-
-        if (!c->buffered) {
-            return NGX_OK;
+  
+    while (1) {
+        if (NULL == again_ptr->out_chain_arr[again_ptr->ix_r]) {
+        //  ix_r = 0;
+        //  ix_w = 0;
+            break;
         }
-    }
+       
+        ctx->out = again_ptr->out_chain_arr[again_ptr->ix_r];
 
-    return NGX_AGAIN;
+        ngx_log_debug1(NGX_LOG_DEBUG_CORE, c->log, 0,
+            "tcp chain writer in: %p", ctx->out);
+
+        size = 0;
+        for (cl = ctx->out; cl; cl = cl->next) {
+
+    #if 1
+            if (ngx_buf_size(cl->buf) == 0 && !ngx_buf_special(cl->buf)) {
+                ngx_debug_point();
+            }
+
+    #endif
+
+            size += ngx_buf_size(cl->buf);
+        }
+
+        if (size == 0 && !c->buffered) {
+            again_ptr->out_chain_arr[again_ptr->ix_r] = NULL;
+            again_ptr->ix_r++;
+            again_ptr->ix_r &= (OUTPUT_CHAIN_AGAIN_SIZE - 1);
+            continue;
+        }
+
+        again_ptr->out_chain_arr[again_ptr->ix_r] = 
+            c->send_chain(c, 
+                again_ptr->out_chain_arr[again_ptr->ix_r], ctx->limit);
+        
+        ctx->out = again_ptr->out_chain_arr[again_ptr->ix_r];
+        ngx_log_debug1(NGX_LOG_DEBUG_CORE, c->log, 0,
+                       "chain writer out: %p", ctx->out);
+
+        if (ctx->out == NGX_CHAIN_ERROR) {
+            ngx_log_error(NGX_LOG_ERR, c->log, 0, 
+                "ngx_tcp_chain_writer|out_chain_arr[%d]==NGX_CHAIN_ERROR", 
+                again_ptr->ix_r);
+            again_ptr->out_chain_arr[again_ptr->ix_r] = NULL;
+            again_ptr->ix_r++;
+            again_ptr->ix_r &= (OUTPUT_CHAIN_AGAIN_SIZE - 1);
+            return NGX_ERROR;
+        }
+
+        if (ctx->out == NULL) {
+            ctx->last = &ctx->out;
+            
+            if (!c->buffered) {
+                again_ptr->ix_r++;
+                again_ptr->ix_r &= (OUTPUT_CHAIN_AGAIN_SIZE - 1);
+                //return NGX_OK;
+                continue;
+            }
+        }
+        
+        ngx_log_error(NGX_LOG_DEBUG, c->log, 0,
+            "ngx_tcp_chain_writer|again_ptr->out_chain_arr[%d] NGX_AGAIN", 
+            again_ptr->ix_r);
+        return NGX_AGAIN;
+    }
+    return NGX_OK;    
 }
