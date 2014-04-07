@@ -4,6 +4,7 @@
 #include <ngx_event.h>
 #include <ngx_tcp.h>
 #include <ngx_tcp_cmd_module.h>
+#include <ngx_map.h>
 
 
 static ngx_buf_t *ngx_buf_compact(ngx_buf_t *buffer);
@@ -28,7 +29,7 @@ ngx_tcp_cmd_create_session(ngx_connection_t *c)
     }
     s->tcp_ctx.conf_get_str = (ngx_tcp_conf_get_str_pt)ngx_tcp_cmd_conf_get_str;
     s->tcp_ctx.log = c->log;
-    s->tcp_ctx.log_error = (ngx_tcp_log_error_pt)ngx_log_error_core;
+    s->tcp_ctx.log_error = (ngx_tcp_log_error_pt)ngx_tcp_log_error;
     s->tcp_ctx.send_data = ngx_tcp_send_data;
     s->tcp_ctx.pool = c->pool;
     s->tcp_ctx.palloc = (ngx_tcp_alloc_pt)ngx_palloc;
@@ -41,7 +42,7 @@ ngx_tcp_cmd_create_session(ngx_connection_t *c)
         goto failed;
     }
     s->output_ctx->pool = c->pool;
-    //s->output_ctx->output_filter = ngx_chain_writer;
+   // s->output_ctx->output_filter = ngx_chain_writer;
     s->output_ctx->output_filter = ngx_tcp_chain_writer;
     filter_ctx = ngx_pcalloc(c->pool, sizeof(ngx_chain_writer_ctx_t));
     if (filter_ctx == NULL) {
@@ -61,6 +62,7 @@ failed:
 void
 ngx_tcp_cmd_init_session(ngx_tcp_session_t *s, ngx_connection_t *c)
 {
+    ngx_log_error(NGX_LOG_INFO, c->log, 0, "%s|%d|%s|", __FILE__, __LINE__, __FUNCTION__);
     ngx_tcp_core_main_conf_t   *cmcf;
     ngx_tcp_core_srv_conf_t    *cscf;
     socketfd_info_t            *socketfd_info;
@@ -83,10 +85,11 @@ ngx_tcp_cmd_init_session(ngx_tcp_session_t *s, ngx_connection_t *c)
     socketfd_info->tag = s;    
 
     ngx_add_timer(c->read, cscf->timeout);
+    ngx_log_error(NGX_LOG_INFO, c->log, 0, "%s|%d|%s|%03M", __FILE__, __LINE__, __FUNCTION__, cscf->timeout);
     if (ngx_handle_read_event(c->read, 0) != NGX_OK) {
         ngx_log_error(NGX_LOG_ERR, c->log, 0, 
-            "ngx_tcp_cmd_init_session|ngx_handle_read_event|client=%V|fd=%d\n", 
-                &c->addr_text, c->fd);
+            "%s|%d|%s|ngx_handle_read_event|client=%V|fd=%d\n", 
+                __FILE__, __LINE__, __FUNCTION__, &c->addr_text, c->fd);
         ngx_tcp_close_connection(c);
         return;
     }
@@ -95,8 +98,8 @@ ngx_tcp_cmd_init_session(ngx_tcp_session_t *s, ngx_connection_t *c)
     for (i=0; i < cmdso_mgr->cmdsos.nelts; ++i) {
         if (cmdsos[i].cmdso_sess_init(& s->tcp_ctx) != 0) {
             ngx_log_error(NGX_LOG_ERR, c->log, 0, 
-                "ngx_tcp_cmd_init_session|cmdso_sess_init|client=%V|fd=%d\n", 
-                &c->addr_text, c->fd);
+                "%s|%d|%s|cmdso_sess_init|client=%V|fd=%d\n", 
+                __FILE__, __LINE__, __FUNCTION__, &c->addr_text, c->fd);
             ngx_tcp_close_connection(c);
             return;
         }
@@ -146,7 +149,7 @@ ngx_tcp_cmd_init_protocol(ngx_event_t *rev)
     c->log->action = "init protocol finished";
 
     if (rev->timedout) {
-        ngx_log_error(NGX_LOG_INFO, c->log, NGX_ETIMEDOUT, "client timed out");
+        ngx_log_error(NGX_LOG_INFO, c->log, NGX_ETIMEDOUT, "%s|%d|%s|client timed out",__FILE__, __LINE__, __FUNCTION__);
         c->timedout = 1;
         ngx_tcp_close_connection(c);
         return;
@@ -159,6 +162,7 @@ ngx_tcp_cmd_init_protocol(ngx_event_t *rev)
 void
 ngx_tcp_cmd_handle(ngx_event_t *rev)
 {
+    ngx_tcp_core_srv_conf_t         *cscf;
     ngx_int_t                        rc;
     ngx_connection_t                *c;
     ngx_tcp_session_t               *s;
@@ -168,11 +172,16 @@ ngx_tcp_cmd_handle(ngx_event_t *rev)
     c = rev->data;
     s = (ngx_tcp_session_t *) c->data;
     iscf = ngx_tcp_get_module_srv_conf(s, ngx_tcp_cmd_module);
+    cscf = ngx_tcp_get_module_srv_conf(s, ngx_tcp_core_module);
 
     ngx_log_error(NGX_LOG_DEBUG, c->log, 0, "ngx_tcp_cmd_handle");
 
+    if (rev->timer_set) {
+        ngx_del_timer(rev);
+    }
+    
     if (rev->timedout) {
-        ngx_log_error(NGX_LOG_INFO, c->log, NGX_ETIMEDOUT, "client timed out");
+        ngx_log_error(NGX_LOG_INFO, c->log, NGX_ETIMEDOUT, "%s|%d|%s|client timed out", __FILE__, __LINE__, __FUNCTION__);
         c->timedout = 1;
         ngx_tcp_close_connection(c);
         return;
@@ -187,6 +196,8 @@ ngx_tcp_cmd_handle(ngx_event_t *rev)
         return;
     }
 
+    ngx_add_timer(c->read, cscf->timeout);
+    
     if (n > 0) {
         s->buffer->last += n;
     }
@@ -272,20 +283,23 @@ ngx_tcp_cmd_parse_pkg(ngx_tcp_session_t *s)
 {
     ngx_tcp_cmd_session_t     *sub_s;
     ngx_tcp_cmd_pkghead_t     *pkghead;
-    ngx_int_t                  rc;
-    cmd_pkg_handler_pt         h;
+	ngx_int_t                  rc = NGX_OK;
 
     sub_s = (ngx_tcp_cmd_session_t *)s;
     pkghead = (ngx_tcp_cmd_pkghead_t *)(sub_s->parent.buffer->pos);
-    h = ngx_tcp_cmd_lookup_pkg_handler(pkghead->cmd);
-    if (h == NULL) {
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, 
+	if (21 != pkghead->size)
+	{
+		cmd_pkg_handler_pt         h;
+		h = ngx_tcp_cmd_lookup_pkg_handler(pkghead->cmd);
+		if (h == NULL) {
+			ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, 
             "ngx_tcp_cmd_parse_pkg|cmd=%d not found\n",
             pkghead->cmd);
-        return NGX_ERROR;
-    }
-    rc = (*h)(& s->tcp_ctx, sub_s->parent.buffer->pos, pkghead->size);
-    sub_s->parent.buffer->pos += pkghead->size;
+			return NGX_ERROR;
+		}
+		rc = (*h)(& s->tcp_ctx, sub_s->parent.buffer->pos, pkghead->size);
+	}
 
+	sub_s->parent.buffer->pos += pkghead->size;
     return rc;
 }
