@@ -5,6 +5,9 @@
 #include <sys/types.h>
 #include <stdint.h>
 #include <netinet/in.h>
+#include "pkg_data.h"
+
+typedef PkgHead ngx_tcp_cmd_pkghead_t;
 
 /* */
 typedef intptr_t        ngx_tcp_int_t;
@@ -21,6 +24,9 @@ typedef int             ngx_tcp_err_t;
 #define NGX_TCP_LOG_NOTICE            6
 #define NGX_TCP_LOG_INFO              7
 #define NGX_TCP_LOG_DEBUG             8
+
+#define ngx_tcp_log_error(ctx, level, log, ...) \
+    if (ctx && (ctx)->log_level >= level) ctx->log_error(level, log, __VA_ARGS__)
 
 typedef struct ngx_tcp_ctx_s ngx_tcp_ctx_t;
 
@@ -45,8 +51,9 @@ struct ngx_tcp_ctx_s {
     ngx_tcp_send_data_pt     send_data;
 
     ngx_tcp_conf_get_str_pt  conf_get_str;
-
+    
     void                    *log;
+    uintptr_t                log_level;
     ngx_tcp_log_error_pt     log_error;
 
     void                    *pool;
@@ -54,6 +61,15 @@ struct ngx_tcp_ctx_s {
     ngx_tcp_alloc_pt         pcalloc;
     ngx_tcp_pfree_pt         pfree;
 };
+
+struct ngx_tcp_cycle_ctx_s {
+	   ngx_tcp_conf_get_str_pt   conf_get_str;
+	   void                     *log;
+       uintptr_t                 log_level;
+	   ngx_tcp_log_error_pt      log_error;
+};
+
+typedef struct ngx_tcp_cycle_ctx_s ngx_tcp_cycle_ctx_t;
 
 typedef long (*cmd_pkg_handler_pt)(ngx_tcp_ctx_t *ctx, 
                                    const u_char *pkg, 
@@ -69,19 +85,9 @@ typedef long
 #define CMDSO_SESS_INIT     "cmdso_sess_init"
 #define CMDSO_SESS_FINIT    "cmdso_sess_finit"
 
-typedef void (*ngx_cyl_log_error_pt)(ngx_tcp_uint_t level, void *log, 
-                                     ngx_tcp_err_t err, 
-                                     const char *fmt, ...);
-struct ngx_tcp_cycle_ctx_s {
-	   ngx_tcp_conf_get_str_pt  conf_get_str;
-	   void                     *log;
-	   ngx_cyl_log_error_pt     log_error;
-};
-typedef struct ngx_tcp_cycle_ctx_s ngx_tcp_cycle_ctx_t;
-
 typedef long 
-(*cmdso_load_pt)(void *cycle_param, cmd_pkg_handler_add_pt add_h, int slot,
-	ngx_tcp_cycle_ctx_t *cycle_ctx);
+(*cmdso_load_pt)(void *cycle_param, cmd_pkg_handler_add_pt add_h, int slot, ngx_tcp_cycle_ctx_t *cycle_ctx);
+
 typedef long (*cmdso_unload_pt)(void *cycle_param);
 typedef long (*cmdso_sess_init_pt)(ngx_tcp_ctx_t *ctx);
 typedef long (*cmdso_sess_finit_pt)(ngx_tcp_ctx_t *ctx);
@@ -96,6 +102,7 @@ typedef struct {
 
 
 #pragma pack(push, 1)
+#if 0
 typedef struct {
     /* size == pkg_head + pkg_body */
     uint32_t size;
@@ -109,6 +116,7 @@ typedef struct {
     uint32_t spare4;
     uint32_t spare5;
 } ngx_tcp_cmd_pkghead_t;
+#endif
 typedef struct {
     pid_t      dest_pid;
     int32_t    dest_fd;
