@@ -9,7 +9,7 @@ pp_pkg_handler(ngx_tcp_ctx_t *ctx, const u_char *pkg, int pkg_len);
 long 
 cmdso_load(void *cycle_param, cmd_pkg_handler_add_pt add_h, int slot, ngx_tcp_cycle_ctx_t *cycle_ctx)
 {
-	cycle_ctx->log_error(NGX_TCP_LOG_INFO, cycle_ctx->log, 0, 
+	ngx_tcp_log_error(&cycle_ctx->tcp_log_t,NGX_TCP_LOG_INFO, 0, 
 			"cmdso_load|slot=%d", slot);
     pp_cmdso_slot = slot;
     if (0 != (*add_h)(cycle_param, PP_CMD_CS, PP_CMD_CS, pp_pkg_handler)) {
@@ -43,7 +43,7 @@ pp_pkg_handler(ngx_tcp_ctx_t *ctx, const u_char *pkg, int pkg_len)
         pp_val = "no ini pp_key val";
     }
 
-    ctx->log_error(NGX_TCP_LOG_INFO, ctx->log, 0, 
+    ngx_tcp_log_error(&ctx->tcp_log_t, NGX_TCP_LOG_INFO, 0, 
         "pp_pkg_handler|pkg_size=%d|str=%s|pp_val=%s\n",
             pkghead->size, pkg + CMD_SESSION_PKG_HEAD_LEN, pp_val);
 

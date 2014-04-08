@@ -7,8 +7,6 @@
 #include <netinet/in.h>
 #include "pkg_data.h"
 
-typedef PkgHead ngx_tcp_cmd_pkghead_t;
-
 /* */
 typedef intptr_t        ngx_tcp_int_t;
 typedef uintptr_t       ngx_tcp_uint_t;
@@ -105,7 +103,7 @@ typedef struct {
 
 
 #pragma pack(push, 1)
-#if 0
+#if 1
 typedef struct {
     /* size == pkg_head + pkg_body */
     uint32_t size;
