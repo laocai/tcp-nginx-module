@@ -325,7 +325,7 @@ ngx_tcp_send(ngx_event_t *wev)
     s = c->data;
 
     if (wev->timedout) {
-        ngx_log_error(NGX_LOG_WARN, c->log, NGX_ETIMEDOUT, "ngx_tcp_send|client timed out");
+        ngx_log_error(NGX_LOG_INFO, c->log, NGX_ETIMEDOUT, "%s|%d|%s|client timed out",__FILE__, __LINE__, __FUNCTION__);
         c->timedout = 1;
         ngx_tcp_close_connection(c);
         return;

@@ -25,8 +25,8 @@ typedef int             ngx_tcp_err_t;
 #define NGX_TCP_LOG_INFO              7
 #define NGX_TCP_LOG_DEBUG             8
 
-#define ngx_tcp_log_error(ctx, level, log, ...) \
-    if (ctx && (ctx)->log_level >= level) ctx->log_error(level, log, __VA_ARGS__)
+#define ngx_tcp_log_error(tcp_log_ptr, level, ...) \
+    if ((tcp_log_ptr)->log_level >= level) (tcp_log_ptr)->log_error(level, (tcp_log_ptr)->log, __VA_ARGS__)
 
 typedef struct ngx_tcp_ctx_s ngx_tcp_ctx_t;
 
@@ -44,6 +44,13 @@ typedef ngx_tcp_int_t (*ngx_tcp_pfree_pt)(void *pool, void *p);
 typedef ngx_tcp_int_t (*ngx_tcp_conf_get_str_pt)(const char *section,
     const char *k, char **v);
 
+struct ngx_tcp_log_s {
+    void                    *log;
+    uintptr_t                log_level;
+    ngx_tcp_log_error_pt     log_error;
+};
+typedef struct ngx_tcp_log_s ngx_tcp_log_t;
+
 struct ngx_tcp_ctx_s {
     /* cmdso_sessioin array. the slot is init in cmdso_load func */
     void                   **cmdso_sessioin;
@@ -52,9 +59,7 @@ struct ngx_tcp_ctx_s {
 
     ngx_tcp_conf_get_str_pt  conf_get_str;
     
-    void                    *log;
-    uintptr_t                log_level;
-    ngx_tcp_log_error_pt     log_error;
+    ngx_tcp_log_t            tcp_log_t;
 
     void                    *pool;
     ngx_tcp_alloc_pt         palloc;
@@ -64,9 +69,7 @@ struct ngx_tcp_ctx_s {
 
 struct ngx_tcp_cycle_ctx_s {
 	   ngx_tcp_conf_get_str_pt   conf_get_str;
-	   void                     *log;
-       uintptr_t                 log_level;
-	   ngx_tcp_log_error_pt      log_error;
+	   ngx_tcp_log_t             tcp_log_t;
 };
 
 typedef struct ngx_tcp_cycle_ctx_s ngx_tcp_cycle_ctx_t;

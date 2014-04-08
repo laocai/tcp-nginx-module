@@ -286,7 +286,6 @@ __pcre_exec_after_ini_section__:
             v.data = (u_char *)(line_buf + ovector[4]);
             v.len = ovector[5] - ovector[4];
 
-
             ngx_map_set_ngxstr_ngxstr(section_map, &k, &v);
         }
     } // end while
@@ -312,7 +311,7 @@ ngx_tcp_cmd_process_init(ngx_cycle_t *cycle)
     ngx_str_t            cmdso_path = CMDSO_PATH_STR;
     ngx_uint_t           i;
     ngx_tcp_cmdso_t     *cmdsos;
-	ngx_tcp_cycle_ctx_t  *cycle_ctx;
+    ngx_tcp_cycle_ctx_t  *cycle_ctx;
 
     cmdso_mgr = ngx_pcalloc(cycle->pool, sizeof(ngx_tcp_cmdso_mgr_t));
     if (cmdso_mgr == NULL) {
@@ -325,8 +324,9 @@ ngx_tcp_cmd_process_init(ngx_cycle_t *cycle)
 	}
 	
 	cycle_ctx->conf_get_str = (ngx_tcp_conf_get_str_pt)ngx_tcp_cmd_conf_get_str;
-	cycle_ctx->log = cycle->log;
-	cycle_ctx->log_error=(ngx_cyl_log_error_pt)ngx_log_error_core;
+	cycle_ctx->tcp_log_t.log = cycle->log;
+        cycle_ctx->tcp_log_t.log_level = cycle->log->log_level;
+	cycle_ctx->tcp_log_t.log_error=(ngx_tcp_log_error_pt)ngx_log_error_core;
 
     ngx_rbtree_init(&cmdso_mgr->pkg_handler_mgr.rbtree, 
                     &cmdso_mgr->pkg_handler_mgr.sentinel, 
