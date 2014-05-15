@@ -85,6 +85,7 @@ Grab the nginx source code from nginx.org (&lt;http://nginx.org/&gt;), extract t
 <h3>TODO</h3>
 
 <pre><code>1.   test ssl 
-2.   exploit more nginx/ngx_tcp to develop Command Protocol Shared Dynamic Library, for example shared memory、log and so on.
-3.   .......
+2.   exploit more nginx/ngx_tcp to develop Command Protocol Shared Dynamic Library, for example shared memory and so on.
+3.   add doc or blob
+4.   .......
 </code></pre>
