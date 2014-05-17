@@ -5,7 +5,6 @@
 #include <sys/types.h>
 #include <stdint.h>
 #include <netinet/in.h>
-#include "pkg_data.h"
 
 /* */
 typedef intptr_t        ngx_tcp_int_t;
