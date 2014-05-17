@@ -20,7 +20,6 @@ static int read_n(int fd, char *buf, int n);
 int 
 main(void)
 {
-    int     n;
     int     fd;
     int     msg_len;
     char    send_buf[BUF_LEN];
