@@ -28,8 +28,9 @@ ngx_tcp_cmd_create_session(ngx_connection_t *c)
         goto failed;
     }
     s->tcp_ctx.conf_get_str = (ngx_tcp_conf_get_str_pt)ngx_tcp_cmd_conf_get_str;
-    s->tcp_ctx.log = c->log;
-    s->tcp_ctx.log_error = (ngx_tcp_log_error_pt)ngx_tcp_log_error;
+    s->tcp_ctx.tcp_log_t.log = c->log;
+    s->tcp_ctx.tcp_log_t.log_level = c->log->log_level;
+    s->tcp_ctx.tcp_log_t.log_error = (ngx_tcp_log_error_pt)ngx_log_error_core;
     s->tcp_ctx.send_data = ngx_tcp_send_data;
     s->tcp_ctx.pool = c->pool;
     s->tcp_ctx.palloc = (ngx_tcp_alloc_pt)ngx_palloc;
