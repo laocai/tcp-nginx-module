@@ -61,7 +61,7 @@ Command Protocol Format</p>
 <pre><code>Download the latest stable version of the release tarball of this module
 from github ()
 
-Grab the nginx source code from nginx.org (&lt;http://nginx.org/&gt;), extract the source and go into the dir.
+Grab the nginx source code(version:1.4.x) from nginx.org (&lt;http://nginx.org/&gt;), extract the source and go into the dir.
 
     # ./configure --prefix=/path/to/$build_prefix --add-module=/path/to/tcp_module
     # make
