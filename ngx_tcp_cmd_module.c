@@ -401,7 +401,7 @@ ngx_tcp_cmd_load_cmdso(ngx_cycle_t *cycle, const char *cmdso_path)
                      ret = rc;
                  }
             }
-            if (ent->d_type & DT_REG) {
+            if (ent->d_type & DT_REG || ent->d_type == DT_UNKNOWN) {
                  size_t filename_len = ngx_strlen(ent->d_name);
                  if (filename_len < 3 || ent->d_name[filename_len - 1] != 'o'
                      || ent->d_name[filename_len - 2] != 's'

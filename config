@@ -1,6 +1,6 @@
 ngx_addon_name=ngx_tcp_module
 CORE_INCS="$CORE_INCS $ngx_addon_dir"
-# CORE_LIBS="$CORE_LIBS -lstdc++"
+CORE_LIBS="$CORE_LIBS -ldl"
 TCP_CORE_MODULES="ngx_tcp_module ngx_tcp_core_module ngx_tcp_cmd_module"
 # NGX_ADDON_DEPS="$NGX_ADDON_DEPS ngx_tcp_config.h ngx_tcp_core_module.h ngx_tcp.h"
 TCP_CMD_MODULE_SRC="$ngx_addon_dir/ngx_tcp_cmd_handler.c $ngx_addon_dir/ngx_tcp_cmd_module.c"
