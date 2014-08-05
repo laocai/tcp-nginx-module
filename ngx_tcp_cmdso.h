@@ -74,11 +74,18 @@ typedef struct ngx_tcp_cycle_ctx_s ngx_tcp_cycle_ctx_t;
 typedef long (*cmd_pkg_handler_pt)(ngx_tcp_ctx_t *ctx, 
                                    const u_char *pkg, 
                                    int pkg_len);
+/* pkg = head + body. Filter result must be the same as this format. */
+typedef long (*cmd_pkg_filter_pt)(ngx_tcp_ctx_t *ctx,
+                                  u_char **pkg,
+                                  int pkg_len);
 
 typedef long
 (*cmd_pkg_handler_add_pt)(void *cycle_param, 
                           uint32_t cmd_min, uint32_t cmd_max,
                           cmd_pkg_handler_pt h);
+typedef long
+(*cmd_pkg_filter_add_pt)(void *cycle_param, cmd_pkg_filter_pt h);
+
 
 #define CMDSO_LOAD          "cmdso_load"
 #define CMDSO_UNLOAD        "cmdso_unload"
@@ -86,7 +93,8 @@ typedef long
 #define CMDSO_SESS_FINIT    "cmdso_sess_finit"
 
 typedef long 
-(*cmdso_load_pt)(void *cycle_param, cmd_pkg_handler_add_pt add_h, int slot, ngx_tcp_cycle_ctx_t *cycle_ctx);
+(*cmdso_load_pt)(void *cycle_param, cmd_pkg_handler_add_pt add_h, cmd_pkg_filter_add_pt add_filter_h, 
+                 int slot, ngx_tcp_cycle_ctx_t *cycle_ctx);
 
 typedef long (*cmdso_unload_pt)(void *cycle_param);
 typedef long (*cmdso_sess_init_pt)(ngx_tcp_ctx_t *ctx);

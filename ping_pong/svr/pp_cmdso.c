@@ -7,7 +7,8 @@ pp_pkg_handler(ngx_tcp_ctx_t *ctx, const u_char *pkg, int pkg_len);
 
 
 long 
-cmdso_load(void *cycle_param, cmd_pkg_handler_add_pt add_h, int slot, ngx_tcp_cycle_ctx_t *cycle_ctx)
+cmdso_load(void *cycle_param, cmd_pkg_handler_add_pt add_h, cmd_pkg_filter_add_pt add_filter_h, 
+    int slot, ngx_tcp_cycle_ctx_t *cycle_ctx)
 {
 	ngx_tcp_log_error(&cycle_ctx->tcp_log_t,NGX_TCP_LOG_INFO, 0, 
 			"cmdso_load|slot=%d", slot);

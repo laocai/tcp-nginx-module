@@ -10,6 +10,7 @@
 
 ngx_tcp_cmdso_mgr_t *cmdso_mgr;
 ngx_map_t           *cmdso_conf;
+ngx_array_t          pkg_filters;
 
 static void *ngx_tcp_cmd_create_srv_conf(ngx_conf_t *cf);
 static char *ngx_tcp_cmd_merge_srv_conf(ngx_conf_t *cf, void *parent,
@@ -27,6 +28,8 @@ static long
 ngx_tcp_cmd_pkg_handler_add(void *cycle_param, 
                             uint32_t cmd_min, uint32_t cmd_max,
                             cmd_pkg_handler_pt h);
+static long ngx_tcp_cmd_pkg_filter_add(void *cycle_param, cmd_pkg_filter_pt h);
+
 typedef ngx_int_t (*load_cmdso_process_pt) (ngx_cycle_t *, const char *);
 static ngx_int_t
 ngx_tcp_cmd_load_cmdso_process(ngx_cycle_t *cycle, 
@@ -337,6 +340,12 @@ ngx_tcp_cmd_process_init(ngx_cycle_t *cycle)
                                  sizeof(ngx_tcp_cmdso_t))) {
         goto failed;
     }
+    if (NGX_OK != ngx_array_init(&pkg_filters, 
+                                 cycle->pool,
+                                 4, 
+                                 sizeof(cmd_pkg_filter_pt))) {
+        goto failed;
+    }
     if (NGX_OK != ngx_tcp_cmd_pkg_handler_add(cycle, 
                                         NGX_TCP_CMD_KEEPALIVE,
                                         NGX_TCP_CMD_KEEPALIVE,
@@ -358,7 +367,7 @@ ngx_tcp_cmd_process_init(ngx_cycle_t *cycle)
     }
     cmdsos = cmdso_mgr->cmdsos.elts;
     for (i=0; i < cmdso_mgr->cmdsos.nelts; ++i) {
-        if (cmdsos[i].cmdso_load(cycle, ngx_tcp_cmd_pkg_handler_add, i, cycle_ctx)
+        if (cmdsos[i].cmdso_load(cycle, ngx_tcp_cmd_pkg_handler_add, ngx_tcp_cmd_pkg_filter_add, i, cycle_ctx)
             != NGX_OK) {
             goto failed;
         }
@@ -566,6 +575,16 @@ ngx_tcp_cmd_pkg_handler_add(void *cycle_param,
 
 failed:
     return NGX_ERROR;
+}
+
+
+static long 
+ngx_tcp_cmd_pkg_filter_add(void *cycle_param, cmd_pkg_filter_pt h)
+{
+    cmd_pkg_filter_pt *filter = (cmd_pkg_filter_pt *) ngx_array_push(&pkg_filters);
+    *filter = h;
+
+    return 0;
 }
 
 
