@@ -55,6 +55,7 @@ struct ngx_tcp_ctx_s {
     ngx_tcp_send_data_pt     send_data;
 
     ngx_tcp_conf_get_str_pt  conf_get_str;
+    uintptr_t               *current_msec;
     
     ngx_tcp_log_t            tcp_log_t;
 
@@ -154,6 +155,21 @@ ngx_tcp_cmd_pkghead_ntoh(ngx_tcp_cmd_pkghead_t *pkghead)
 #define NGX_TCP_CMD_KEEPALIVE 1
 #define NGX_TCP_CMD_TRAN 2
 #define NGX_TCP_CMD_MAX_PKG_SIZE (1024 * 1024 * 4)
+
+# ifdef __cplusplus
+extern "C" {
+# endif
+
+  /* The dynamic shared object must implement this function for loading. */
+  long cmdso_load(void *cycle_param, cmd_pkg_handler_add_pt add_h, cmd_pkg_filter_add_pt add_filter_h,
+      int slot, ngx_tcp_cycle_ctx_t *cycle_ctx);
+  long cmdso_unload(void *cycle_param);
+  long cmdso_sess_init(ngx_tcp_ctx_t *ctx);
+  long cmdso_sess_finit(ngx_tcp_ctx_t *ctx);
+
+# ifdef __cplusplus
+}
+# endif
 
 #endif
 
