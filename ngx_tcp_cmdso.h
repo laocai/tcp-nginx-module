@@ -55,7 +55,7 @@ struct ngx_tcp_ctx_s {
     ngx_tcp_send_data_pt     send_data;
 
     ngx_tcp_conf_get_str_pt  conf_get_str;
-    uintptr_t               *current_msec;
+    volatile uintptr_t      *current_msec;
     
     ngx_tcp_log_t            tcp_log_t;
 
