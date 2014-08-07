@@ -321,15 +321,15 @@ ngx_tcp_cmd_process_init(ngx_cycle_t *cycle)
         goto failed;
     }
 
-	cycle_ctx = ngx_pcalloc(cycle->pool, sizeof(ngx_tcp_cycle_ctx_t));
-	if (NULL == cycle_ctx) {
-		goto failed;
-	}
-	
-	cycle_ctx->conf_get_str = (ngx_tcp_conf_get_str_pt)ngx_tcp_cmd_conf_get_str;
-	cycle_ctx->tcp_log_t.log = cycle->log;
-        cycle_ctx->tcp_log_t.log_level = cycle->log->log_level;
-	cycle_ctx->tcp_log_t.log_error=(ngx_tcp_log_error_pt)ngx_log_error_core;
+    cycle_ctx = ngx_pcalloc(cycle->pool, sizeof(ngx_tcp_cycle_ctx_t));
+    if (NULL == cycle_ctx) {
+    	goto failed;
+    }
+
+    cycle_ctx->conf_get_str = (ngx_tcp_conf_get_str_pt)ngx_tcp_cmd_conf_get_str;
+    cycle_ctx->tcp_log_t.log = cycle->log;
+    cycle_ctx->tcp_log_t.log_level = cycle->log->log_level;
+    cycle_ctx->tcp_log_t.log_error=(ngx_tcp_log_error_pt)ngx_log_error_core;
 
     ngx_rbtree_init(&cmdso_mgr->pkg_handler_mgr.rbtree, 
                     &cmdso_mgr->pkg_handler_mgr.sentinel, 
