@@ -28,7 +28,7 @@ static long
 ngx_tcp_cmd_pkg_handler_add(void *cycle_param, 
                             uint32_t cmd_min, uint32_t cmd_max,
                             cmd_pkg_handler_pt h);
-static long ngx_tcp_cmd_pkg_filter_add(void *cycle_param, cmd_pkg_filter_pt h);
+static long ngx_tcp_cmd_pkg_filter_add(void *cycle_param, cmd_pkg_filter_pt h, int to_call_first);
 
 typedef ngx_int_t (*load_cmdso_process_pt) (ngx_cycle_t *, const char *);
 static ngx_int_t
@@ -346,6 +346,9 @@ ngx_tcp_cmd_process_init(ngx_cycle_t *cycle)
                                  sizeof(cmd_pkg_filter_pt))) {
         goto failed;
     }
+    /* reserve for first call filter */
+    cmd_pkg_filter_pt *filter = (cmd_pkg_filter_pt *) ngx_array_push(&pkg_filters);
+    *filter = NULL;
     if (NGX_OK != ngx_tcp_cmd_pkg_handler_add(cycle, 
                                         NGX_TCP_CMD_KEEPALIVE,
                                         NGX_TCP_CMD_KEEPALIVE,
@@ -579,10 +582,17 @@ failed:
 
 
 static long 
-ngx_tcp_cmd_pkg_filter_add(void *cycle_param, cmd_pkg_filter_pt h)
+ngx_tcp_cmd_pkg_filter_add(void *cycle_param, cmd_pkg_filter_pt h, int to_call_first)
 {
-    cmd_pkg_filter_pt *filter = (cmd_pkg_filter_pt *) ngx_array_push(&pkg_filters);
-    *filter = h;
+    cmd_pkg_filter_pt *filter;
+
+    if (to_call_first) {
+        filter = pkg_filters.elts;
+        filter[0] = h;
+    } else {
+      cmd_pkg_filter_pt *filter = (cmd_pkg_filter_pt *) ngx_array_push(&pkg_filters);
+      *filter = h;
+    }
 
     return 0;
 }

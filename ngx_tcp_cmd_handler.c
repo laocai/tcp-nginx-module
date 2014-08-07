@@ -292,10 +292,11 @@ ngx_tcp_cmd_parse_pkg(ngx_tcp_session_t *s)
     unsigned int               i;
 
     sub_s = (ngx_tcp_cmd_session_t *)s;
-    filters = cmdso_mgr->cmdsos.elts;
+    filters = pkg_filters.elts;
     for (i=0; i<pkg_filters.nelts; ++i) {
         pkghead = (ngx_tcp_cmd_pkghead_t *)(sub_s->parent.buffer->pos);
-        rc = (*(filters[i]))(&s->tcp_ctx, &sub_s->parent.buffer->pos, pkghead->size);
+        if (filters[i])
+            rc = (*(filters[i]))(&s->tcp_ctx, &sub_s->parent.buffer->pos, pkghead->size);
         if (rc == NGX_ERROR)
             return rc;
     }

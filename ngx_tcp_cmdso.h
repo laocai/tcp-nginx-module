@@ -84,8 +84,14 @@ typedef long
 (*cmd_pkg_handler_add_pt)(void *cycle_param, 
                           uint32_t cmd_min, uint32_t cmd_max,
                           cmd_pkg_handler_pt h);
+
+/**
+ * to_call_first indicate the filter function to be call first in all filter
+ * If these are more than two first call filters,only one will be valid, others
+ * were lost.
+ */
 typedef long
-(*cmd_pkg_filter_add_pt)(void *cycle_param, cmd_pkg_filter_pt h);
+(*cmd_pkg_filter_add_pt)(void *cycle_param, cmd_pkg_filter_pt h, int to_call_first);
 
 
 #define CMDSO_LOAD          "cmdso_load"
@@ -111,7 +117,6 @@ typedef struct {
 
 
 #pragma pack(push, 1)
-#if 1
 typedef struct {
     /* size == pkg_head + pkg_body */
     uint32_t size;
@@ -125,7 +130,6 @@ typedef struct {
     uint32_t spare4;
     uint32_t spare5;
 } ngx_tcp_cmd_pkghead_t;
-#endif
 typedef struct {
     pid_t      dest_pid;
     int32_t    dest_fd;
