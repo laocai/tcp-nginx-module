@@ -2,6 +2,8 @@
 
 static int pp_cmdso_slot;
 
+ngx_tcp_cycle_ctx_t *g_cycle_ctx;
+
 static long 
 pp_pkg_handler(ngx_tcp_ctx_t *ctx, const u_char *pkg, int pkg_len);
 
@@ -10,12 +12,18 @@ long
 cmdso_load(void *cycle_param, cmd_pkg_handler_add_pt add_h, cmd_pkg_filter_add_pt add_filter_h, 
     int slot, ngx_tcp_cycle_ctx_t *cycle_ctx)
 {
-	ngx_tcp_log_error(&cycle_ctx->tcp_log_t,NGX_TCP_LOG_INFO, 0, 
-			"cmdso_load|slot=%d", slot);
     pp_cmdso_slot = slot;
     if (0 != (*add_h)(cycle_param, PP_CMD_CS, PP_CMD_CS, pp_pkg_handler)) {
+        ngx_tcp_log_error(&cycle_ctx->tcp_log_t,NGX_TCP_LOG_ERR, 0, 
+            "cmdso_load|slot=%d", slot);
+
         return -1;
     }
+    g_cycle_ctx = cycle_ctx;
+
+    ngx_tcp_log_error(&cycle_ctx->tcp_log_t,NGX_TCP_LOG_INFO, 0, 
+        "cmdso_load|slot=%d|socketfd_shm_info=%p", 
+            slot, g_cycle_ctx->socketfd_shm_info);
 
     return 0;
 }
@@ -40,7 +48,7 @@ pp_pkg_handler(ngx_tcp_ctx_t *ctx, const u_char *pkg, int pkg_len)
 
     pkghead = (ngx_tcp_cmd_pkghead_t *) pkg;
 
-    if (ctx->conf_get_str(ini_section, pp_key, &pp_val) != 0) {
+    if (g_cycle_ctx->conf_get_str(ini_section, pp_key, &pp_val) != 0) {
         pp_val = "no ini pp_key val";
     }
 
@@ -50,7 +58,7 @@ pp_pkg_handler(ngx_tcp_ctx_t *ctx, const u_char *pkg, int pkg_len)
 
     pkghead->cmd = PP_CMD_SC;
     ngx_tcp_cmd_pkghead_hton(pkghead);
-    (*(ctx->send_data))(ctx, pkg, pkg_len);
+    (*(g_cycle_ctx->send_data))(ctx, pkg, pkg_len);
 
     /* pkg is const so restore the value */
     ngx_tcp_cmd_pkghead_hton(pkghead);

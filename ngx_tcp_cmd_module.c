@@ -312,14 +312,18 @@ failed:
 static ngx_int_t 
 ngx_tcp_cmd_process_init(ngx_cycle_t *cycle)
 {
-    ngx_str_t            cmdso_path = CMDSO_PATH_STR;
-    ngx_uint_t           i;
-    ngx_tcp_cmdso_t     *cmdsos;
-    ngx_tcp_cycle_ctx_t *cycle_ctx;
-    ngx_core_conf_t     *ccf;
+    ngx_str_t                   cmdso_path = CMDSO_PATH_STR;
+    ngx_uint_t                  i;
+    ngx_tcp_cmdso_t            *cmdsos;
+    ngx_tcp_cycle_ctx_t        *cycle_ctx;
+    ngx_core_conf_t            *ccf;
+    ngx_tcp_core_main_conf_t   *cmcf;
+    ngx_tcp_conf_ctx_t         *ctx;
 
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
+    ctx = (ngx_tcp_conf_ctx_t *)ngx_get_conf(cycle->conf_ctx, ngx_tcp_module);
+    cmcf = ngx_tcp_get_module_main_conf(ctx, ngx_tcp_core_module);
     process_info.pid = ngx_pid;
     process_info.process_slot = ngx_process_slot;
     process_info.worker_processes = ccf->worker_processes;
@@ -336,6 +340,9 @@ ngx_tcp_cmd_process_init(ngx_cycle_t *cycle)
 
     cycle_ctx->process_info = &process_info;
     cycle_ctx->conf_get_str = (ngx_tcp_conf_get_str_pt)ngx_tcp_cmd_conf_get_str;
+    cycle_ctx->send_data = ngx_tcp_send_data;
+    cycle_ctx->current_msec = &ngx_current_msec;
+    cycle_ctx->socketfd_shm_info = cmcf->socketfd_shm->info;
     cycle_ctx->tcp_log_t.log = cycle->log;
     cycle_ctx->tcp_log_t.log_level = cycle->log->log_level;
     cycle_ctx->tcp_log_t.log_error=(ngx_tcp_log_error_pt)ngx_log_error_core;

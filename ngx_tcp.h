@@ -104,30 +104,6 @@ typedef struct {
 #endif
 } ngx_tcp_conf_addr_t;
 
-/* sizeof(struct sockaddr_un) less than 255 */
-#define MAX_UNIX_URL_LEN 255
-typedef struct {
-  u_char     len;
-  u_char     unix_url[MAX_UNIX_URL_LEN];
-} unix_listening_info_t;
-
-
-typedef void *        socketfd_info_tag;
-typedef struct {
-    /* work process unix-listening info index is ngx_process_slot */
-    ngx_int_t            listening_unix_info_i;
-    socketfd_info_tag    tag;
-} socketfd_info_t;
-
-
-/* All the address is shm. */
-typedef struct {
-    /* Array of socketfd_info_t. Array index is socketfd. */
-    socketfd_info_t        *socketfd_info;
-    /* Array of unix listening info. */
-    unix_listening_info_t  *listening_unix_info;
-} socketfd_shm_info_t;
-
 
 typedef struct {
     ngx_path_t                      *path;

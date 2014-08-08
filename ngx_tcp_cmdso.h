@@ -49,6 +49,31 @@ struct ngx_tcp_log_s {
 };
 typedef struct ngx_tcp_log_s ngx_tcp_log_t;
 
+/* sizeof(struct sockaddr_un) less than 255 */
+#define MAX_UNIX_URL_LEN 255
+typedef struct {
+  u_char     len;
+  u_char     unix_url[MAX_UNIX_URL_LEN];
+} unix_listening_info_t;
+
+typedef void *socketfd_info_tag;
+typedef struct {
+    /* Work process unix-listening info index. 
+     * The index value is from ngx_process_slot. 
+     */
+    ngx_tcp_int_t        listening_unix_info_i;
+
+    socketfd_info_tag    tag;
+} socketfd_info_t;
+
+/* All the address is in shared memory. */
+typedef struct {
+    /* Array of socketfd_info_t. Array index is socketfd. */
+    socketfd_info_t        *socketfd_info;
+    /* Array of unix listening info. */
+    unix_listening_info_t  *listening_unix_info;
+} socketfd_shm_info_t;
+
 struct ngx_tcp_process_info_s {
     pid_t            pid;
     ngx_tcp_int_t    process_slot;
@@ -60,14 +85,8 @@ struct ngx_tcp_ctx_s {
     /* cmdso_sessioin array. the slot is init in cmdso_load func */
     void                   **cmdso_sessioin;
     void                    *ngx_tcp_session;
-    ngx_tcp_send_data_pt     send_data;
 
-    ngx_tcp_process_info_t  *process_info;
-    ngx_tcp_conf_get_str_pt  conf_get_str;
-    volatile uintptr_t      *current_msec;
-    
     ngx_tcp_log_t            tcp_log_t;
-
     void                    *pool;
     ngx_tcp_alloc_pt         palloc;
     ngx_tcp_alloc_pt         pcalloc;
@@ -75,12 +94,20 @@ struct ngx_tcp_ctx_s {
 };
 
 struct ngx_tcp_cycle_ctx_s {
-    ngx_tcp_process_info_t   *process_info;
-    ngx_tcp_conf_get_str_pt   conf_get_str;
-    ngx_tcp_log_t             tcp_log_t;
-};
+    ngx_tcp_process_info_t    *process_info;
+    ngx_tcp_conf_get_str_pt    conf_get_str;
+    ngx_tcp_log_t              tcp_log_t;
+    ngx_tcp_send_data_pt       send_data;
 
+    volatile uintptr_t        *current_msec;
+    socketfd_shm_info_t       *socketfd_shm_info;
+};
 typedef struct ngx_tcp_cycle_ctx_s ngx_tcp_cycle_ctx_t;
+
+///* g_cycle_ctx is declared here must be defined in dynamic shared object,
+// * must be initialized in cmdso_load from the param cycle_ctx.
+// */
+//extern ngx_tcp_cycle_ctx_t *g_cycle_ctx;
 
 typedef long (*cmd_pkg_handler_pt)(ngx_tcp_ctx_t *ctx, 
                                    const u_char *pkg, 
