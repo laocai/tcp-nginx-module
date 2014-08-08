@@ -38,6 +38,7 @@ typedef void (*ngx_tcp_log_error_pt)(ngx_tcp_uint_t level, void *log,
 typedef void *(*ngx_tcp_alloc_pt)(void *pool, size_t size);
 typedef ngx_tcp_int_t (*ngx_tcp_pfree_pt)(void *pool, void *p);
 
+/* the result 'v' is no need to free */
 typedef ngx_tcp_int_t (*ngx_tcp_conf_get_str_pt)(const char *section,
     const char *k, char **v);
 
@@ -48,12 +49,20 @@ struct ngx_tcp_log_s {
 };
 typedef struct ngx_tcp_log_s ngx_tcp_log_t;
 
+struct ngx_tcp_process_info_s {
+    pid_t            pid;
+    ngx_tcp_int_t    process_slot;
+    ngx_tcp_int_t    worker_processes;
+};
+typedef struct ngx_tcp_process_info_s ngx_tcp_process_info_t;
+
 struct ngx_tcp_ctx_s {
     /* cmdso_sessioin array. the slot is init in cmdso_load func */
     void                   **cmdso_sessioin;
     void                    *ngx_tcp_session;
     ngx_tcp_send_data_pt     send_data;
 
+    ngx_tcp_process_info_t  *process_info;
     ngx_tcp_conf_get_str_pt  conf_get_str;
     volatile uintptr_t      *current_msec;
     
@@ -66,8 +75,9 @@ struct ngx_tcp_ctx_s {
 };
 
 struct ngx_tcp_cycle_ctx_s {
-	   ngx_tcp_conf_get_str_pt   conf_get_str;
-	   ngx_tcp_log_t             tcp_log_t;
+    ngx_tcp_process_info_t   *process_info;
+    ngx_tcp_conf_get_str_pt   conf_get_str;
+    ngx_tcp_log_t             tcp_log_t;
 };
 
 typedef struct ngx_tcp_cycle_ctx_s ngx_tcp_cycle_ctx_t;

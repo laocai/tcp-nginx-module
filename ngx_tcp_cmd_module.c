@@ -11,6 +11,7 @@
 ngx_tcp_cmdso_mgr_t *cmdso_mgr;
 ngx_map_t           *cmdso_conf;
 ngx_array_t          pkg_filters;
+ngx_tcp_process_info_t process_info;
 
 static void *ngx_tcp_cmd_create_srv_conf(ngx_conf_t *cf);
 static char *ngx_tcp_cmd_merge_srv_conf(ngx_conf_t *cf, void *parent,
@@ -314,7 +315,14 @@ ngx_tcp_cmd_process_init(ngx_cycle_t *cycle)
     ngx_str_t            cmdso_path = CMDSO_PATH_STR;
     ngx_uint_t           i;
     ngx_tcp_cmdso_t     *cmdsos;
-    ngx_tcp_cycle_ctx_t  *cycle_ctx;
+    ngx_tcp_cycle_ctx_t *cycle_ctx;
+    ngx_core_conf_t     *ccf;
+
+
+    ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
+    process_info.pid = ngx_pid;
+    process_info.process_slot = ngx_process_slot;
+    process_info.worker_processes = ccf->worker_processes;
 
     cmdso_mgr = ngx_pcalloc(cycle->pool, sizeof(ngx_tcp_cmdso_mgr_t));
     if (cmdso_mgr == NULL) {
@@ -326,6 +334,7 @@ ngx_tcp_cmd_process_init(ngx_cycle_t *cycle)
     	goto failed;
     }
 
+    cycle_ctx->process_info = &process_info;
     cycle_ctx->conf_get_str = (ngx_tcp_conf_get_str_pt)ngx_tcp_cmd_conf_get_str;
     cycle_ctx->tcp_log_t.log = cycle->log;
     cycle_ctx->tcp_log_t.log_level = cycle->log->log_level;

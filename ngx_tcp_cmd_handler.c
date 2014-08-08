@@ -8,6 +8,7 @@
 
 
 extern ngx_array_t    pkg_filters;
+extern ngx_tcp_process_info_t process_info;
 static ngx_buf_t *ngx_buf_compact(ngx_buf_t *buffer);
 
 static void
@@ -23,6 +24,7 @@ ngx_tcp_cmd_create_session(ngx_connection_t *c)
     if (s == NULL) {
         goto failed;
     }
+    s->tcp_ctx.process_info = &process_info;
     s->tcp_ctx.cmdso_sessioin = ngx_pcalloc(c->pool, 
                                     sizeof(void *) * cmdso_mgr->cmdsos.nelts);
     if (s->tcp_ctx.cmdso_sessioin == NULL) {
