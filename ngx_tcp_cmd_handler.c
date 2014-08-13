@@ -28,6 +28,7 @@ ngx_tcp_cmd_create_session(ngx_connection_t *c)
     if (s->tcp_ctx.cmdso_sessioin == NULL) {
         goto failed;
     }
+    s->tcp_ctx.socketfd = c->fd;
     s->tcp_ctx.tcp_log_t.log = c->log;
     s->tcp_ctx.tcp_log_t.log_level = c->log->log_level;
     s->tcp_ctx.tcp_log_t.log_error = (ngx_tcp_log_error_pt)ngx_log_error_core;

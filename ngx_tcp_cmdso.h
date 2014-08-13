@@ -85,6 +85,7 @@ struct ngx_tcp_ctx_s {
     /* cmdso_sessioin array. the slot is init in cmdso_load func */
     void                   **cmdso_sessioin;
     void                    *ngx_tcp_session;
+    int                      socketfd;
 
     ngx_tcp_log_t            tcp_log_t;
     void                    *pool;
