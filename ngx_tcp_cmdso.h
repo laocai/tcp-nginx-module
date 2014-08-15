@@ -86,6 +86,8 @@ struct ngx_tcp_ctx_s {
     void                   **cmdso_sessioin;
     void                    *ngx_tcp_session;
     int                      socketfd;
+    uint32_t                 pkg_recv_count;
+    uint32_t                 pkg_send_count;
 
     ngx_tcp_log_t            tcp_log_t;
     void                    *pool;

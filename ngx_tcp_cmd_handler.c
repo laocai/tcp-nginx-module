@@ -28,6 +28,8 @@ ngx_tcp_cmd_create_session(ngx_connection_t *c)
     if (s->tcp_ctx.cmdso_sessioin == NULL) {
         goto failed;
     }
+    s->tcp_ctx.pkg_recv_count = 0;
+    s->tcp_ctx.pkg_send_count = 0;
     s->tcp_ctx.socketfd = c->fd;
     s->tcp_ctx.tcp_log_t.log = c->log;
     s->tcp_ctx.tcp_log_t.log_level = c->log->log_level;
@@ -249,6 +251,7 @@ ngx_tcp_cmd_handle(ngx_event_t *rev)
             break;
         }
 
+        s->tcp_ctx.pkg_recv_count++;
         rc = ngx_tcp_cmd_parse_pkg(s);
         ((ngx_tcp_cmd_session_t *)s)->pkghead_parsed = 0;
 

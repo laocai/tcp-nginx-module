@@ -409,6 +409,7 @@ long ngx_tcp_send_data(ngx_tcp_ctx_t *ctx, const u_char *data, int len)
         cl->next = out_chain;
     }
 
+    ctx->pkg_send_count++;
     ngx_tcp_send(c->write);
 
     return 0;
