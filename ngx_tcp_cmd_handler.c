@@ -229,7 +229,7 @@ ngx_tcp_cmd_handle(ngx_event_t *rev)
             ((ngx_tcp_cmd_session_t *)s)->pkghead_parsed = 1;
         }
         pkg_size = pkghead->size;
-        if (pkg_size > iscf->max_pkg_size) {
+        if (0 == pkg_size || pkg_size > iscf->max_pkg_size) {
             ngx_log_error(NGX_LOG_ERR, c->log, 0,
                 "ngx_tcp_cmd_handle|pkg_size=%d|max_pkg_size=%d\n", 
                     pkg_size, iscf->max_pkg_size);
