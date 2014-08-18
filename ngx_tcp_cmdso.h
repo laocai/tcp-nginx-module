@@ -25,7 +25,10 @@ typedef int             ngx_tcp_err_t;
 #define ngx_tcp_log_error(tcp_log_ptr, level, ...) \
     if ((tcp_log_ptr)->log_level >= level) (tcp_log_ptr)->log_error(level, (tcp_log_ptr)->log, __VA_ARGS__)
 
+typedef struct ngx_tcp_cycle_ctx_s ngx_tcp_cycle_ctx_t;
 typedef struct ngx_tcp_ctx_s ngx_tcp_ctx_t;
+
+typedef ngx_tcp_ctx_t *(*ngx_tcp_get_ctx_pt)(ngx_tcp_cycle_ctx_t *cycle_ctx, int fd);
 
 typedef long (*ngx_tcp_send_data_pt)(ngx_tcp_ctx_t *ctx, 
                                      const u_char *data, 
@@ -101,11 +104,11 @@ struct ngx_tcp_cycle_ctx_s {
     ngx_tcp_conf_get_str_pt    conf_get_str;
     ngx_tcp_log_t              tcp_log_t;
     ngx_tcp_send_data_pt       send_data;
+    ngx_tcp_get_ctx_pt         get_ctx;
 
     volatile uintptr_t        *current_msec;
     socketfd_shm_info_t       *socketfd_shm_info;
 };
-typedef struct ngx_tcp_cycle_ctx_s ngx_tcp_cycle_ctx_t;
 
 ///* g_cycle_ctx is declared here must be defined in dynamic shared object,
 // * must be initialized in cmdso_load from the param cycle_ctx.

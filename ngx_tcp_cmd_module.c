@@ -309,6 +309,20 @@ failed:
     return NGX_ERROR;
 }
 
+ngx_tcp_ctx_t *
+ngx_tcp_get_ctx(ngx_tcp_cycle_ctx_t *cycle_ctx, int fd)
+{
+    ngx_tcp_session_t *s;
+    socketfd_info_t   *fd_info;
+
+    fd_info = &cycle_ctx->socketfd_shm_info->socketfd_info[fd];
+    if (ngx_process_slot != fd_info->listening_unix_info_i)
+        return NULL;
+    s = (ngx_tcp_session_t *)fd_info->tag;
+
+    return &s->tcp_ctx;
+}
+
 static ngx_int_t 
 ngx_tcp_cmd_process_init(ngx_cycle_t *cycle)
 {
@@ -341,6 +355,7 @@ ngx_tcp_cmd_process_init(ngx_cycle_t *cycle)
     cycle_ctx->process_info = &process_info;
     cycle_ctx->conf_get_str = (ngx_tcp_conf_get_str_pt)ngx_tcp_cmd_conf_get_str;
     cycle_ctx->send_data = ngx_tcp_send_data;
+    cycle_ctx->get_ctx = ngx_tcp_get_ctx;
     cycle_ctx->current_msec = &ngx_current_msec;
     cycle_ctx->socketfd_shm_info = cmcf->socketfd_shm->info;
     cycle_ctx->tcp_log_t.log = cycle->log;
