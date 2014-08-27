@@ -65,7 +65,7 @@ typedef struct {
      * The index value is from ngx_process_slot. 
      */
     ngx_tcp_int_t        listening_unix_info_i;
-
+    pid_t                pid;
     socketfd_info_tag    tag;
 } socketfd_info_t;
 

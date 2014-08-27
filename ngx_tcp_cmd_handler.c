@@ -85,7 +85,8 @@ ngx_tcp_cmd_init_session(ngx_tcp_session_t *s, ngx_connection_t *c)
 
     socketfd_info = cmcf->socketfd_shm->info->socketfd_info + c->fd;
     socketfd_info->listening_unix_info_i = ngx_process_slot;
-    socketfd_info->tag = s;    
+    socketfd_info->pid = ngx_pid;
+    socketfd_info->tag = s;
 
     ngx_add_timer(c->read, cscf->timeout);
     ngx_log_error(NGX_LOG_INFO, c->log, 0, "%s|%d|%s|%03M", __FILE__, __LINE__, __FUNCTION__, cscf->timeout);
