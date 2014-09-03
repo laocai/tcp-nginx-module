@@ -817,7 +817,8 @@ ngx_tcp_instruct_unix_listen(ngx_cycle_t *cycle)
 
     unix_info = cmcf->socketfd_shm->info->listening_unix_info + ngx_process_slot;
     ngx_memzero(unix_info, sizeof(unix_listening_info_t));
-    ngx_memcpy(unix_info, u.url.data, u.url.len);
+    unix_info->len = u.url.len;
+    ngx_memcpy(unix_info->unix_url, u.url.data, u.url.len);
 
     ls = ngx_pcalloc(cycle->pool, sizeof(ngx_listening_t));
     if (ls == NULL) {
