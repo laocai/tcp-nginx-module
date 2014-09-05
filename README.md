@@ -45,7 +45,7 @@ Command Protocol Format</p>
     max_socketfd_value          100000;
     worker_process_unix_listen  logs/tcp;
     # keys_zone size must &gt;= (max_socketfd_value * 16 + worker_processes * 512)
-    socketfd_shm                /tmp/socketfd_shm keys_zone=cache_socketfd_shm:2m;
+    socketfd_shm                /tmp/socketfd_shm keys_zone=cache_socketfd_shm:10m;
     max_pkg_size 2m;
     # error_log logs/tcp_err.log debug;
     server {
@@ -61,7 +61,7 @@ Command Protocol Format</p>
 <pre><code>Download the latest stable version of the release tarball of this module
 from github ()
 
-Grab the nginx source code(version:1.4.x) from nginx.org (&lt;http://nginx.org/&gt;), extract the source and go into the dir.
+Grab the nginx source code from nginx.org (&lt;http://nginx.org/&gt;), extract the source and go into the dir.
 
     # ./configure --prefix=/path/to/$build_prefix --add-module=/path/to/tcp_module
     # make
