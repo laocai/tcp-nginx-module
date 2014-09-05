@@ -7,6 +7,7 @@
 #include <ngx_tcp_cmd_module.h>
 #include <dlfcn.h>
 #include <ngx_map.h>
+#include <from_ngx_src.h>
 
 ngx_tcp_cmdso_mgr_t *cmdso_mgr;
 ngx_map_t           *cmdso_conf;
@@ -361,6 +362,7 @@ ngx_tcp_cmd_process_init(ngx_cycle_t *cycle)
     cycle_ctx->tcp_log_t.log = cycle->log;
     cycle_ctx->tcp_log_t.log_level = cycle->log->log_level;
     cycle_ctx->tcp_log_t.log_error=(ngx_tcp_log_error_pt)ngx_log_error_core;
+    //cycle_ctx->tcp_log_t.log_error = (ngx_tcp_log_error_pt)__ngx_log_error_core;
 
     ngx_rbtree_init(&cmdso_mgr->pkg_handler_mgr.rbtree, 
                     &cmdso_mgr->pkg_handler_mgr.sentinel, 

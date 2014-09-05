@@ -2,7 +2,9 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <ngx_event.h>
+#include <nginx.h>
 #include <ngx_tcp.h>
+#include <from_ngx_src.h>
 
 
 static void *ngx_tcp_core_create_main_conf(ngx_conf_t *cf);
@@ -265,7 +267,8 @@ ngx_tcp_core_error_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         name = value[1];
     }
 
-    cmcf->error_log = ngx_log_create(cf->cycle, &name);
+    //cmcf->error_log = ngx_log_create(cf->cycle, &name);
+    cmcf->error_log = __ngx_log_create(cf->cycle, &name);
     if (cmcf->error_log == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -275,7 +278,8 @@ ngx_tcp_core_error_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_OK;
     }
 
-    return ngx_log_set_levels(cf, cmcf->error_log);
+    return __ngx_log_set_levels(cf, cmcf->error_log);
+    //return ngx_log_set_levels(cf, cmcf->error_log);
 }
 
 
@@ -834,7 +838,11 @@ ngx_tcp_instruct_unix_listen(ngx_cycle_t *cycle)
     ls->sockaddr = sa;
     ls->socklen = u.socklen;
 
+#if nginx_version >= 1006000
+    len = ngx_sock_ntop(sa, u.socklen, text, NGX_SOCKADDR_STRLEN, 1);
+#else
     len = ngx_sock_ntop(sa, text, NGX_SOCKADDR_STRLEN, 1);
+#endif
     ls->addr_text.len = len;
 
     ls->addr_text_max_len = NGX_UNIX_ADDRSTRLEN;

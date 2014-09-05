@@ -5,6 +5,7 @@
 #include <ngx_tcp.h>
 #include <ngx_tcp_cmd_module.h>
 #include <ngx_map.h>
+#include <from_ngx_src.h>
 
 
 extern ngx_array_t    pkg_filters;
@@ -34,6 +35,7 @@ ngx_tcp_cmd_create_session(ngx_connection_t *c)
     s->tcp_ctx.tcp_log_t.log = c->log;
     s->tcp_ctx.tcp_log_t.log_level = c->log->log_level;
     s->tcp_ctx.tcp_log_t.log_error = (ngx_tcp_log_error_pt)ngx_log_error_core;
+    //s->tcp_ctx.tcp_log_t.log_error = (ngx_tcp_log_error_pt)__ngx_log_error_core;
     s->tcp_ctx.pool = c->pool;
     s->tcp_ctx.palloc = (ngx_tcp_alloc_pt)ngx_palloc;
     s->tcp_ctx.pcalloc = (ngx_tcp_alloc_pt)ngx_pcalloc;
