@@ -316,7 +316,7 @@ ngx_tcp_get_ctx(ngx_tcp_cycle_ctx_t *cycle_ctx, int fd)
     ngx_tcp_session_t *s;
     socketfd_info_t   *fd_info;
 
-    fd_info = &cycle_ctx->socketfd_shm_info->socketfd_info[fd];
+    fd_info = &cycle_ctx->export_data.socketfd_shm_info->socketfd_info[fd];
     if (ngx_process_slot != fd_info->listening_unix_info_i)
         return NULL;
     s = (ngx_tcp_session_t *)fd_info->tag;
@@ -353,15 +353,20 @@ ngx_tcp_cmd_process_init(ngx_cycle_t *cycle)
     	goto failed;
     }
 
-    cycle_ctx->process_info = &process_info;
-    cycle_ctx->conf_get_str = (ngx_tcp_conf_get_str_pt)ngx_tcp_cmd_conf_get_str;
-    cycle_ctx->send_data = ngx_tcp_send_data;
-    cycle_ctx->get_ctx = ngx_tcp_get_ctx;
-    cycle_ctx->current_msec = &ngx_current_msec;
-    cycle_ctx->socketfd_shm_info = cmcf->socketfd_shm->info;
-    cycle_ctx->tcp_log_t.log = cycle->log;
-    cycle_ctx->tcp_log_t.log_level = cycle->log->log_level;
-    cycle_ctx->tcp_log_t.log_error=(ngx_tcp_log_error_pt)ngx_log_error_core;
+    cycle_ctx->export_func.conf_get_str = (ngx_tcp_conf_get_str_pt)ngx_tcp_cmd_conf_get_str;
+    cycle_ctx->export_func.log.log = cycle->log;
+    cycle_ctx->export_func.log.log_level = cycle->log->log_level;
+    cycle_ctx->export_func.log.log_error=(ngx_tcp_log_error_pt)ngx_log_error_core;
+    cycle_ctx->export_func.send_data = ngx_tcp_send_data;
+    cycle_ctx->export_func.get_ctx = ngx_tcp_get_ctx;
+
+    //cycle_ctx->conf_get_str = (ngx_tcp_conf_get_str_pt)ngx_tcp_cmd_conf_get_str;
+    //cycle_ctx->send_data = ngx_tcp_send_data;
+    //cycle_ctx->get_ctx = ngx_tcp_get_ctx;
+    cycle_ctx->export_data.process_info = &process_info;
+    cycle_ctx->export_data.current_msec = &ngx_current_msec;
+    cycle_ctx->export_data.socketfd_shm_info = cmcf->socketfd_shm->info;
+
     //cycle_ctx->tcp_log_t.log_error = (ngx_tcp_log_error_pt)__ngx_log_error_core;
 
     ngx_rbtree_init(&cmdso_mgr->pkg_handler_mgr.rbtree, 

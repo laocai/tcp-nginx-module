@@ -1,6 +1,6 @@
 SHELL = /bin/sh
 CC    = gcc
-CFLAGS       = -fPIC -Wall
+CFLAGS       = -fPIC -Wall -I../../
 DEBUGFLAGS   = -g -O0 -D_DEBUG -DDEBUG
 RELEASEFLAGS = -O2 -DNDEBUG
 LDFLAGS      = -shared

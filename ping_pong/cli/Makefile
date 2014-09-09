@@ -1,6 +1,6 @@
 SHELL = /bin/sh
 CC    = gcc
-CFLAGS       = -Wall
+CFLAGS       = -Wall -I../../
 DEBUGFLAGS   = -g -O0 -D_DEBUG -DDEBUG
 RELEASEFLAGS = -O2 -D NDEBUG -fwhole-program
 
