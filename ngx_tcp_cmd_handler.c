@@ -6,9 +6,9 @@
 #include <ngx_tcp_cmd_module.h>
 #include <ngx_map.h>
 #include <from_ngx_src.h>
+#include <ngx_tcp_io.h>
 
 
-extern ngx_array_t    pkg_filters;
 static ngx_buf_t *ngx_buf_compact(ngx_buf_t *buffer);
 
 static void
@@ -291,29 +291,47 @@ ngx_tcp_cmd_parse_pkg(ngx_tcp_session_t *s)
     ngx_tcp_cmd_session_t     *sub_s;
     ngx_tcp_cmd_pkghead_t     *pkghead;
     ngx_int_t                  rc = NGX_OK;
-    cmd_pkg_handler_pt         h;
-    cmd_pkg_filter_pt         *filters;
-    unsigned int               i;
+    cmdpkg_handler_pt          h;
+    //cmdpkg_filter_pt          *filters;
+    //unsigned int               i;
+    u_char                    *pkg;
+    int                        pkg_len;
 
     sub_s = (ngx_tcp_cmd_session_t *)s;
-    filters = pkg_filters.elts;
-    for (i=0; i<pkg_filters.nelts; ++i) {
-        pkghead = (ngx_tcp_cmd_pkghead_t *)(sub_s->parent.buffer->pos);
-        if (filters[i])
-            rc = (*(filters[i]))(&s->tcp_ctx, &sub_s->parent.buffer->pos, pkghead->size);
-        if (rc == NGX_ERROR)
-            return rc;
+    pkg = sub_s->parent.buffer->pos;
+    pkghead = (ngx_tcp_cmd_pkghead_t *)pkg;
+    pkg_len = pkghead->size;
+    sub_s->parent.buffer->pos += pkghead->size;
+
+    if (NGX_OK != ngx_tcp_do_cmdpkg_filter(s, &recvpkg_filters, &pkg, &pkg_len)) {
+        return NGX_ERROR;
     }
-    pkghead = (ngx_tcp_cmd_pkghead_t *)(sub_s->parent.buffer->pos);
+
+    //if (recvpkg_filters.first_filter) {
+    //    rc = (*recvpkg_filters.first_filter)(&s->tcp_ctx, &pkg, pkg_len);
+    //    if (rc == NGX_ERROR)
+    //        return rc;
+    //}
+    //filters = recvpkg_filters.cmdpkg_filters.elts;
+    //for (i=0; i<recvpkg_filters.cmdpkg_filters.nelts; ++i) {
+    //    if (filters[i])
+    //        rc = (*(filters[i]))(&s->tcp_ctx, &pkg, pkg_len);
+    //    if (rc == NGX_ERROR)
+    //        return rc;
+    //}
+    //if (recvpkg_filters.last_filter) {
+    //    rc = (*recvpkg_filters.last_filter)(&s->tcp_ctx, &pkg, pkg_len);
+    //    if (rc == NGX_ERROR)
+    //        return rc;
+    //}
+    pkghead = (ngx_tcp_cmd_pkghead_t *)pkg;
     h = ngx_tcp_cmd_lookup_pkg_handler(pkghead->cmd);
     if (h == NULL) {
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, 
             "ngx_tcp_cmd_parse_pkg|cmd=%d not found\n", pkghead->cmd);
         return NGX_ERROR;
     }
-    rc = (*h)(&s->tcp_ctx, sub_s->parent.buffer->pos, pkghead->size);
-
-    sub_s->parent.buffer->pos += pkghead->size;
+    rc = (*h)(&s->tcp_ctx, pkg, pkg_len);
 
     return rc;
 }

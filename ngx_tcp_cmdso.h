@@ -9,26 +9,33 @@
 // */
 //extern ngx_tcp_cycle_ctx_t *g_cycle_ctx;
 
-typedef long (*cmd_pkg_handler_pt)(ngx_tcp_ctx_t *ctx, 
-                                   const u_char *pkg, 
-                                   int pkg_len);
-/* pkg = head + body. Filter result must be the same as this format. */
-typedef long (*cmd_pkg_filter_pt)(ngx_tcp_ctx_t *ctx,
-                                  u_char **pkg,
+typedef long (*cmdpkg_handler_pt)(ngx_tcp_ctx_t *ctx, 
+                                  const u_char *pkg, 
                                   int pkg_len);
 
-typedef long
-(*cmd_pkg_handler_add_pt)(void *cycle_param, 
-                          uint32_t cmd_min, uint32_t cmd_max,
-                          cmd_pkg_handler_pt h);
+/* pkg = head + body. Filter result must be the same as this format. */
+typedef long (*cmdpkg_filter_pt)(ngx_tcp_ctx_t *ctx,
+                                 u_char **pkg,
+                                 int *pkg_len);
 
-/**
- * to_call_first indicate the filter function to be call first in all filter
- * If these are more than two first call filters,only one will be valid, others
- * were lost.
- */
 typedef long
-(*cmd_pkg_filter_add_pt)(void *cycle_param, cmd_pkg_filter_pt h, int to_call_first);
+(*cmdpkg_handler_add_pt)(void *cycle_param, 
+                         uint32_t cmd_min, uint32_t cmd_max,
+                         cmdpkg_handler_pt h);
+
+enum
+{
+    FILTER_CALL_NO_ORDER = 0,
+
+    // If these are more than one first call filters, only one will be valid
+    FILTER_CALL_FIRST = 1,
+
+    // If these are more than one last call filters, only one will be valid
+    FILTER_CALL_LAST  = 2
+};
+
+typedef long
+(*cmdpkg_filter_add_pt)(void *cycle_param, cmdpkg_filter_pt h, int call_order);
 
 
 #define CMDSO_LOAD          "cmdso_load"
@@ -37,7 +44,9 @@ typedef long
 #define CMDSO_SESS_FINIT    "cmdso_sess_finit"
 
 typedef long 
-(*cmdso_load_pt)(void *cycle_param, cmd_pkg_handler_add_pt add_h, cmd_pkg_filter_add_pt add_filter_h, 
+(*cmdso_load_pt)(void *cycle_param, cmdpkg_handler_add_pt add_h, 
+                 cmdpkg_filter_add_pt add_recvpkg_filter_h,
+                 cmdpkg_filter_add_pt add_sendpkg_filter_h,
                  int slot, ngx_tcp_cycle_ctx_t *cycle_ctx);
 
 typedef long (*cmdso_unload_pt)(void *cycle_param);
@@ -102,7 +111,9 @@ extern "C" {
 # endif
 
   /* The dynamic shared object must implement this function for loading. */
-  long cmdso_load(void *cycle_param, cmd_pkg_handler_add_pt add_h, cmd_pkg_filter_add_pt add_filter_h,
+  long cmdso_load(void *cycle_param, cmdpkg_handler_add_pt add_h,
+      cmdpkg_filter_add_pt add_recvpkg_filter_h,
+      cmdpkg_filter_add_pt add_sendpkg_filter_h,
       int slot, ngx_tcp_cycle_ctx_t *cycle_ctx);
   long cmdso_unload(void *cycle_param);
   long cmdso_sess_init(ngx_tcp_ctx_t *ctx);

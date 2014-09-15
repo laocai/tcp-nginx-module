@@ -24,12 +24,12 @@ typedef struct {
 typedef struct {
     ngx_rbtree_t rbtree;
     ngx_rbtree_node_t sentinel;
-} ngx_tcp_cmd_pkg_handler_mgr_t;
+} ngx_tcp_cmdpkg_handler_mgr_t;
 
 
 typedef struct {
-    ngx_tcp_cmd_pkg_handler_mgr_t    pkg_handler_mgr;
-    ngx_array_t                      cmdsos; /* ngx_tcp_cmdso_t array */
+    ngx_tcp_cmdpkg_handler_mgr_t    pkg_handler_mgr;
+    ngx_array_t                     cmdsos; /* ngx_tcp_cmdso_t array */
 } ngx_tcp_cmdso_mgr_t;
 
 ngx_int_t ngx_tcp_cmd_conf_get_str(const char *section, 
@@ -40,7 +40,7 @@ void ngx_tcp_cmd_init_session(ngx_tcp_session_t *s, ngx_connection_t *c);
 void ngx_tcp_cmd_finit_session(ngx_tcp_session_t *s);
 void ngx_tcp_cmd_init_protocol(ngx_event_t *rev);
 ngx_int_t ngx_tcp_cmd_parse_pkg(ngx_tcp_session_t *s);
-cmd_pkg_handler_pt ngx_tcp_cmd_lookup_pkg_handler(uint32_t cmd);
+cmdpkg_handler_pt ngx_tcp_cmd_lookup_pkg_handler(uint32_t cmd);
 
 extern ngx_tcp_cmdso_mgr_t *cmdso_mgr;
 extern ngx_map_t           *cmdso_conf;

@@ -9,7 +9,9 @@ pp_pkg_handler(ngx_tcp_ctx_t *ctx, const u_char *pkg, int pkg_len);
 
 
 long 
-cmdso_load(void *cycle_param, cmd_pkg_handler_add_pt add_h, cmd_pkg_filter_add_pt add_filter_h, 
+cmdso_load(void *cycle_param, cmdpkg_handler_add_pt add_h, 
+    cmdpkg_filter_add_pt add_recvpkg_filter_h, 
+    cmdpkg_filter_add_pt add_sendpkg_filter_h, 
     int slot, ngx_tcp_cycle_ctx_t *cycle_ctx)
 {
     pp_cmdso_slot = slot;

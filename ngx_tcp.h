@@ -249,7 +249,6 @@ typedef ngx_int_t (*ngx_tcp_parse_pkg_pt)(ngx_tcp_session_t *s);
 ngx_chain_t *
 ngx_tcp_chain_get_free_buf(ngx_tcp_output_chain_ctx_t *ctx, size_t total_size);
 ngx_int_t ngx_tcp_open_listening_socket(ngx_listening_t  *ls);
-ngx_int_t ngx_tcp_chain_writer(ngx_tcp_session_t *s);
 
 struct ngx_tcp_protocol_s {
     ngx_str_t                   name;
@@ -315,8 +314,6 @@ ngx_tcp_starttls_only(ngx_tcp_session_t *s, ngx_connection_t *c);
 
 void ngx_tcp_init_connection(ngx_connection_t *c);
 
-void ngx_tcp_send(ngx_event_t *wev);
-long ngx_tcp_send_data(ngx_tcp_ctx_t *ctx, const u_char *data, int len);
 void ngx_tcp_close_connection(ngx_connection_t *c);
 void ngx_tcp_session_internal_server_error(ngx_tcp_session_t *s);
 u_char *ngx_tcp_log_error_msg(ngx_log_t *log, u_char *buf, size_t len);
