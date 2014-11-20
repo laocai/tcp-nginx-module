@@ -354,6 +354,7 @@ ngx_tcp_cmd_process_init(ngx_cycle_t *cycle)
     cycle_ctx->export_func.log.log_level = cycle->log->log_level;
     cycle_ctx->export_func.log.log_error=(ngx_tcp_log_error_pt)ngx_log_error_core;
     cycle_ctx->export_func.send_data = ngx_tcp_send_data;
+    cycle_ctx->export_func.send_cmd_data = ngx_tcp_send_cmdpkg;
     cycle_ctx->export_func.get_ctx = ngx_tcp_get_ctx;
 
     cycle_ctx->export_data.process_info = &process_info;

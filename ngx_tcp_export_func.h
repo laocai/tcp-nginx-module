@@ -24,6 +24,10 @@ typedef ngx_tcp_ctx_t *(*ngx_tcp_get_ctx_pt)(ngx_tcp_cycle_ctx_t *cycle_ctx, int
 typedef long (*ngx_tcp_send_data_pt)(ngx_tcp_ctx_t *ctx, 
                                      const u_char *data, 
                                      int len);
+typedef long (*ngx_tcp_send_cmddata_pt)(ngx_tcp_ctx_t *ctx, 
+                                     u_char *data, 
+                                     int len);
+
 
 typedef void (*ngx_tcp_log_error_pt)(ngx_tcp_uint_t level, void *log, 
                                      ngx_tcp_err_t err, 
@@ -47,6 +51,7 @@ typedef struct
     ngx_tcp_log_t log;
 
     ngx_tcp_send_data_pt send_data;
+    ngx_tcp_send_cmddata_pt send_cmd_data;
 
     ngx_tcp_get_ctx_pt get_ctx;
 
